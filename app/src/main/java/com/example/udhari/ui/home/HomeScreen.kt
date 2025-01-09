@@ -238,19 +238,22 @@ fun HomeMenuDrawer(
                             .padding(top = 16.dp)
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                   Row(){
-                    Text(
-                        "NoteBook1",
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 16.dp)
-                    )
-                       IconButton(onClick = {
-
-                       }) {
-                           Icon(Icons.Outlined.Edit, contentDescription = "Edit")
-                       }
-                   }
+                    Row() {
+                        Text(
+                            "NoteBook1",
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 16.dp)
+                        )
+                        IconButton(onClick = {
+                        }) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = "Edit",
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
+                    }
 
                     IconButton(onClick = {
 

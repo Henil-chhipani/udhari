@@ -19,5 +19,6 @@ import androidx.room.PrimaryKey
 data class FinanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0, // Unique ID for each entity
     val noteBookId: Int,
-    val name: String // Name of the entity (e.g., Raj, School)
+    val name: String, // Name of the entity (e.g., Raj, School)
+    val phoneNumber: String
 )

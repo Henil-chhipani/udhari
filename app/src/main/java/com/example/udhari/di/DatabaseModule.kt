@@ -28,7 +28,6 @@ object DatabaseModule {
     @Provides
     fun providePendingTransactionDao(db: TransactionDatabase) = db.pendingTransactionDao()
 
-
     @Provides
     fun provideFinanceEntityDao(db: TransactionDatabase) = db.financeEntityDao()
 

@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.udhari.ui.addingEntity.AddEntityScreen
 import com.example.udhari.ui.home.HomeScreen
 
 @Composable
@@ -16,6 +17,9 @@ fun Navigation(navHostController: NavHostController) {
         NavHost(navController = navHostController, startDestination = "home") {
             composable("home") {
                 HomeScreen()
+            }
+            composable("addEntity") {
+                AddEntityScreen()
             }
 
         }

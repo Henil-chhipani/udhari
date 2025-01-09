@@ -1,15 +1,61 @@
+# Android Studio and IntelliJ IDEA specific files
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
+.idea/
+*.ipr
+*.iws
+
+# Local configuration files
+local.properties
+
+# Gradle-specific files
+.gradle/
+build/
+!gradle-wrapper.jar
+
+# Generated files
+/captures
+.cxx/
+.externalNativeBuild/
+*.apk
+*.ap_
+output.json
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs and crash reports
+*.log                # Exclude all log files
+hs_err_pid*.log      # Exclude JVM crash logs
+replay_pid*.log      # Exclude Android Emulator replay logs
+*.stacktrace         # Exclude stacktrace files
+*.hprof              # Exclude heap dump files
+
+
+# NDK specific files
+/obj/
+
+# Keystore files (security-sensitive, avoid uploading them)
+/*.keystore
+/*.jks
+
+# Kotlin build cache
+/.kotlin/
+
+# Miscellaneous
+*.log
+*.stacktrace
+*.cph
+*.class
+*.hprof
+
+# Exclude local IntelliJ IDEA settings
+/.idea/caches/
+/.idea/libraries/
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# Exclude .vscode (if using Visual Studio Code as an editor)
+/.vscode/

@@ -2,6 +2,7 @@ package com.example.udhari.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.udhari.data.PreferenceDataStore
 import com.example.udhari.data.entity.FinanceEntity
 import com.example.udhari.data.entity.NoteBookEntity
 import com.example.udhari.data.entity.PendingTransaction
@@ -31,7 +32,8 @@ sealed class HomeEvent {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: FinanceRepository
+    private val repository: FinanceRepository,
+    private val dataStore: PreferenceDataStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())

@@ -79,4 +79,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     // Optional: For paging support (if needed)
     implementation(libs.room.paging)
+
+    // data store
+    implementation (libs.androidx.datastore.preferences)
 }

@@ -3,6 +3,7 @@ package com.example.udhari.ui.home
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.graphics.drawable.Icon
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,10 +24,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -249,16 +255,30 @@ fun HomeMenuDrawer(
                 Column(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start,
-                    modifier = Modifier.width(200.dp)
+                    modifier = Modifier.width(310.dp)
                 ) {
-
-                    Text(
-                        "NoteBook Names",
-                        style = MaterialTheme.typography.titleLarge,
+                    Row(
+//                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
+                            .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .padding(top = 16.dp)
-                    )
+                    ) {
+
+                        Text(
+                            "NoteBooks",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier
+
+                        )
+//                        Spacer(modifier = Modifier.weight(1f))
+//                        Icon(
+//                            imageVector = Icons.Default.Edit,
+//                            contentDescription = ""
+//                        )
+                    }
+
                     HorizontalDivider(
                         modifier = Modifier.padding(
                             horizontal = 16.dp,
@@ -267,24 +287,32 @@ fun HomeMenuDrawer(
                     )
                     uiState.listOfNoteBook.forEach { noteBook ->
                         Row(
-                            modifier = Modifier.background(
-                                if (noteBook.id == uiState.selectedNoteBookId) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                shape = RoundedCornerShape(
-                                    topStart = 0.dp,
-                                    bottomStart = 0.dp,
-                                    topEnd = 10.dp,
-                                    bottomEnd = 10.dp
+                            modifier = Modifier
+                                .background(
+                                    if (noteBook.id == uiState.selectedNoteBookId) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    shape = RoundedCornerShape(
+                                        topStart = 0.dp,
+                                        bottomStart = 0.dp,
+                                        topEnd = 10.dp,
+                                        bottomEnd = 10.dp
+                                    ),
                                 )
-                            )
+                                .clickable {
+                                    onEvent(HomeEvent.SelectNoteBook(noteBook.id))
+                                },
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 noteBook.name,
                                 modifier = Modifier
+                                    .width(135.dp)
                                     .padding(horizontal = 16.dp)
-                                    .padding(top = 16.dp)
+                                    .padding(vertical = 4.dp)
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             IconButton(onClick = {
+                                onEvent(HomeEvent.UpdateNoteBookDialog(noteBook))
                             }) {
                                 Icon(
                                     Icons.Outlined.Edit,
@@ -292,15 +320,34 @@ fun HomeMenuDrawer(
                                     modifier = Modifier.size(17.dp)
                                 )
                             }
+                            IconButton(onClick = {
+                                onEvent(HomeEvent.DeleteNoteBook(noteBook))
+                            }) {
+                                Icon(
+                                    Icons.Outlined.Delete,
+                                    contentDescription = "Delete",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
                         }
                     }
-                    IconButton(modifier = Modifier.wrapContentWidth(), onClick = {
-                        onEvent(HomeEvent.OpenNoteBookDialog(true))
-                    }) {
+
+                    ElevatedButton(
+                        onClick = {
+                            onEvent(HomeEvent.OpenNoteBookDialog(true))
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceDim,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .fillMaxWidth()
+                    ) {
                         Icon(Icons.Outlined.Add, contentDescription = "Add")
-
+                        Text("Add NoteBook")
                     }
-
                 }
             }
         },
@@ -343,7 +390,11 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                 ) {
 
                     ElevatedButton(
-                        onClick = { onEvent(HomeEvent.InsertNoteBook) },
+                        onClick = {
+                            if (uiState.updateNoteBookFlag) onEvent(HomeEvent.UpdateSelectedNoteBook) else onEvent(
+                                HomeEvent.InsertNoteBook
+                            )
+                        },
                         modifier = Modifier.padding()
                     ) {
                         Icon(
@@ -351,7 +402,10 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                             contentDescription = "Add",
                             modifier = Modifier.padding(horizontal = 0.dp)
                         )
-                        Text("Add", modifier = Modifier.padding(horizontal = 0.dp))
+                        Text(
+                            text = if (uiState.updateNoteBookFlag) "Update" else "Add",
+                            modifier = Modifier.padding(horizontal = 0.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     ElevatedButton(
@@ -361,11 +415,11 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                         Text("Cancel", modifier = Modifier.padding(horizontal = 0.dp))
                     }
                 }
-
             }
         }
     }
 }
+
 
 @Composable
 fun HomeCard(

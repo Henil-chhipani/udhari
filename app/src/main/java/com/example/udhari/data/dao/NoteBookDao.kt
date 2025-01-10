@@ -15,6 +15,9 @@ interface NoteBookDao {
     @Update
     fun updateNoteBookEntity(noteBookEntity: NoteBookEntity)
 
+    @Query("UPDATE  note_book SET name = :name WHERE id = :id")
+    fun updateNoteBookEntityNameById(name: String,id: Int)
+
     @Query("SELECT * FROM note_book")
     suspend fun getAllNotebooks(): List<NoteBookEntity>
 

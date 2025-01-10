@@ -121,10 +121,21 @@ class FinanceRepository(
             notebookDao.updateNoteBookEntity(notebook)
         }
     }
+    suspend fun updateNoteBookEntityNameById(name: String, id:Int){
+        withContext(Dispatchers.IO) {
+            notebookDao.updateNoteBookEntityNameById(name, id)
+        }
+    }
 
     suspend fun deleteNotebookById(id: Int) {
         withContext(Dispatchers.IO) {
             notebookDao.deleteNotebookById(id)
+        }
+    }
+
+    suspend fun deleteNotebook(notebook: NoteBookEntity) {
+        withContext(Dispatchers.IO) {
+            notebookDao.deleteNotebook(notebook)
         }
     }
 

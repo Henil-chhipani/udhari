@@ -2,6 +2,7 @@ package com.example.udhari.ui.home
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.graphics.drawable.Icon
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,6 +79,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.udhari.data.entity.NoteBookEntity
 import com.example.udhari.navigation.GlobalNavController
 import com.example.udhari.ui.addingEntity.TextInput
@@ -257,28 +259,14 @@ fun HomeMenuDrawer(
                     horizontalAlignment = Alignment.Start,
                     modifier = Modifier.width(310.dp)
                 ) {
-                    Row(
-//                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                    Text(
+                        "NoteBooks",
+                        style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .padding(top = 16.dp)
-                    ) {
-
-                        Text(
-                            "NoteBooks",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier
-
-                        )
-//                        Spacer(modifier = Modifier.weight(1f))
-//                        Icon(
-//                            imageVector = Icons.Default.Edit,
-//                            contentDescription = ""
-//                        )
-                    }
-
+                    )
                     HorizontalDivider(
                         modifier = Modifier.padding(
                             horizontal = 16.dp,
@@ -306,18 +294,18 @@ fun HomeMenuDrawer(
                             Text(
                                 noteBook.name,
                                 modifier = Modifier
-                                    .width(135.dp)
+                                    .width(220.dp)
                                     .padding(horizontal = 16.dp)
                                     .padding(vertical = 4.dp)
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             IconButton(onClick = {
-                                onEvent(HomeEvent.UpdateNoteBookDialog(noteBook))
+                                onEvent(HomeEvent.OnEditNoteBookClick(noteBook))
                             }) {
                                 Icon(
                                     Icons.Outlined.Edit,
                                     contentDescription = "Edit",
-                                    modifier = Modifier.size(17.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                             IconButton(onClick = {
@@ -326,16 +314,15 @@ fun HomeMenuDrawer(
                                 Icon(
                                     Icons.Outlined.Delete,
                                     contentDescription = "Delete",
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
 
                         }
                     }
-
                     ElevatedButton(
                         onClick = {
-                            onEvent(HomeEvent.OpenNoteBookDialog(true))
+                            onEvent(HomeEvent.OpenNoteBookDialog)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceDim,
@@ -361,7 +348,7 @@ fun HomeMenuDrawer(
 
 @Composable
 fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
-    Dialog(onDismissRequest = { onEvent(HomeEvent.OpenNoteBookDialog(false)) }) {
+    Dialog(onDismissRequest = { onEvent(HomeEvent.CloseNoteBookDialog) }) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.8f)
@@ -376,7 +363,9 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Add NoteBook", style = MaterialTheme.typography.titleMedium)
+                var text = if(uiState.updateNoteBookFlag) "Update NoteBook" else "Add NoteBook"
+                Text(text = text, style = MaterialTheme.typography.titleMedium)
+                Log.d("inside dialog", uiState.noteBookNameString)
                 TextInput(
                     value = uiState.noteBookNameString,
                     onValueChange = { onEvent(HomeEvent.AddingNoteBookName(it)) },
@@ -409,7 +398,7 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     ElevatedButton(
-                        onClick = { onEvent(HomeEvent.OpenNoteBookDialog(false)) },
+                        onClick = { onEvent(HomeEvent.CloseNoteBookDialog) },
                         modifier = Modifier.padding()
                     ) {
                         Text("Cancel", modifier = Modifier.padding(horizontal = 0.dp))

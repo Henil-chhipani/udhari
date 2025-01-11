@@ -1,5 +1,6 @@
 package com.example.udhari.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.udhari.data.PreferenceDataStore
@@ -35,8 +36,9 @@ sealed class HomeEvent {
     data class FetchPendingTransaction(val entityId: Int, val noteBooks: Int) : HomeEvent()
     data object InsertNoteBook : HomeEvent()
     data class AddingNoteBookName(val noteBookName: String) : HomeEvent()
-    data class OpenNoteBookDialog(val open: Boolean) : HomeEvent()
-    data class UpdateNoteBookDialog(val noteBook: NoteBookEntity) : HomeEvent()
+    data object OpenNoteBookDialog : HomeEvent()
+    data object CloseNoteBookDialog : HomeEvent()
+    data class OnEditNoteBookClick(val noteBook: NoteBookEntity) : HomeEvent()
     data object UpdateSelectedNoteBook : HomeEvent()
     data class DeleteNoteBook(val noteBook: NoteBookEntity) : HomeEvent()
     data class SelectNoteBook(val id: Int) : HomeEvent()
@@ -75,29 +77,34 @@ class HomeViewModel @Inject constructor(
             }
 
             is HomeEvent.InsertNoteBook -> insertNoteBook()
-            is HomeEvent.OpenNoteBookDialog -> opneNoteBookDialog(event.open)
+            is HomeEvent.OpenNoteBookDialog -> openNoteBookDialog()
+            is HomeEvent.CloseNoteBookDialog -> closeNoteBookDialog()
             is HomeEvent.AddingNoteBookName -> addingNoteBookName(event.noteBookName)
-            is HomeEvent.UpdateNoteBookDialog -> updateNoteBookDialog(event.noteBook)
+            is HomeEvent.OnEditNoteBookClick -> onEditNoteBookClick(event.noteBook)
             is HomeEvent.UpdateSelectedNoteBook -> updateSelectedNoteBook()
             is HomeEvent.DeleteNoteBook -> deleteNoteBook(event.noteBook)
             is HomeEvent.SelectNoteBook -> selectNoteBook(event.id)
         }
     }
 
-    private fun opneNoteBookDialog(open: Boolean) {
+    private fun openNoteBookDialog() {
+        _uiState.value = _uiState.value.copy(openNoteBookDialog = true)
+    }
+    private fun  closeNoteBookDialog() {
         _uiState.value = _uiState.value.copy(noteBookNameString = "")
-        _uiState.value = _uiState.value.copy(openNoteBookDialog = open)
+        _uiState.value = _uiState.value.copy(openNoteBookDialog = false)
     }
 
     private fun addingNoteBookName(noteBookName: String) {
         _uiState.value = _uiState.value.copy(noteBookNameString = noteBookName)
     }
 
-    private fun updateNoteBookDialog(noteBook: NoteBookEntity) {
+    private fun onEditNoteBookClick(noteBook: NoteBookEntity) {
         _uiState.value = _uiState.value.copy(noteBookNameString = noteBook.name)
         _uiState.value = _uiState.value.copy(noteBook = noteBook)
         _uiState.value = _uiState.value.copy(updateNoteBookFlag = true)
-        opneNoteBookDialog(true)
+        Log.d("updateNoteBookDialog", _uiState.value.noteBookNameString)
+        openNoteBookDialog()
     }
 
     private fun updateSelectedNoteBook() {
@@ -106,8 +113,9 @@ class HomeViewModel @Inject constructor(
             var name = _uiState.value.noteBookNameString
             repository.updateNoteBookEntityNameById(id = noteBookId, name = name)
             _uiState.value = _uiState.value.copy(updateNoteBookFlag = false)
+            _uiState.value = _uiState.value.copy(noteBookNameString = "")
             fetchNoteBooks()
-            opneNoteBookDialog(false)
+            closeNoteBookDialog()
         }
     }
 
@@ -116,7 +124,7 @@ class HomeViewModel @Inject constructor(
             repository.insertNotebook(NoteBookEntity(name = _uiState.value.noteBookNameString))
         }
         _uiState.value = _uiState.value.copy(noteBookNameString = "")
-        opneNoteBookDialog(false)
+        closeNoteBookDialog()
         fetchNoteBooks()
     }
 

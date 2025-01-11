@@ -43,7 +43,9 @@ import com.example.udhari.ui.commonCoponents.BackBtn
 import com.example.udhari.ui.commonCoponents.TopBar
 
 @Composable
-fun AddEntityScreen() {
+fun AddEntityScreen(
+
+) {
     AddEntityScreenUi()
 }
 

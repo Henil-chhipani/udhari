@@ -42,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.compose.AppTheme
 import com.example.compose.LocalExtendedColors
 import com.example.udhari.data.entity.TransactionType
@@ -68,16 +70,22 @@ import kotlin.math.truncate
 
 
 @Composable
-fun TransactionForm(entityId: Int) {
-    TransactionFromUi()
+fun TransactionForm(entityId: Int, viewModel: TransactionFormViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    TransactionFromUi(
+        uiState = uiState,
+        onEvent = viewModel::onEvent
+    )
 }
 
 @Composable
-fun TransactionFromUi() {
+fun TransactionFromUi(
+    uiState: TransactionFormUiState,
+    onEvent: (TransactionFormEvent) -> Unit
+) {
     val globalNavController = GlobalNavController.current
     var extendedColorScheme = LocalExtendedColors.current
     var expanded by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf<TransactionType?>(null) }
     Scaffold(
         topBar = {
             TopBar(
@@ -104,22 +112,22 @@ fun TransactionFromUi() {
                 ) {
 
                     TextInput(
-                        value = "",
-                        onValueChange = { },
+                        value = uiState.amount,
+                        onValueChange = { onEvent(TransactionFormEvent.AmountChanged(it)) },
                         label = "Add Amount",
                         keyBoardType = KeyboardType.Decimal,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
                     TextInput(
-                        value = "",
-                        onValueChange = { },
+                        value = uiState.description,
+                        onValueChange = { onEvent(TransactionFormEvent.DescriptionChanged(it)) },
                         label = "Add Payment description",
                         keyBoardType = KeyboardType.Text,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
-                    var option = selectedOption?.name ?: ""
+                    var option = uiState.type?.name ?: "Select Transaction Type"
                     OutlinedTextField(
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge,
@@ -134,7 +142,6 @@ fun TransactionFromUi() {
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
-                            // Dropdown menu
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
@@ -143,7 +150,7 @@ fun TransactionFromUi() {
                                 TransactionType.values().forEach { transactionType ->
                                     DropdownMenuItem(
                                         onClick = {
-                                            selectedOption = transactionType
+                                            onEvent(TransactionFormEvent.TypeChange(transactionType))
                                             expanded = false
                                         },
                                         text = {
@@ -160,7 +167,7 @@ fun TransactionFromUi() {
                             .clickable { expanded = true },
                         colors = TextFieldDefaults.colors(
                             disabledContainerColor = MaterialTheme.colorScheme.surface,
-                            disabledTextColor = if (selectedOption?.name == "OWE") extendedColorScheme.red.color else if (selectedOption?.name == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTextColor = if (option == "OWE") extendedColorScheme.red.color else if (option == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledIndicatorColor = MaterialTheme.colorScheme.onSurface,
                             disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -177,7 +184,7 @@ fun TransactionFromUi() {
                         onValueChange = {},
                         colors = TextFieldDefaults.colors(
                             disabledContainerColor = MaterialTheme.colorScheme.surface,
-                            disabledTextColor = if (selectedOption?.name == "OWE") extendedColorScheme.red.color else if (selectedOption?.name == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
                             disabledIndicatorColor = MaterialTheme.colorScheme.onSurface,
                             disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -185,7 +192,6 @@ fun TransactionFromUi() {
                             disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                     )
-
 
                     FloatingActionButton(
                         onClick = {
@@ -336,6 +342,9 @@ fun TextInput(
 @Composable
 fun TransactionFormUiPreview() {
     AppTheme {
-        TransactionFromUi()
+        TransactionFromUi(
+            uiState = TransactionFormUiState(),
+            onEvent = {}
+        )
     }
 }

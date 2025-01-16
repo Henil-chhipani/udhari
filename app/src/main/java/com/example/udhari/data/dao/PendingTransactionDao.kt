@@ -23,8 +23,8 @@ interface PendingTransactionDao {
     @Query("SELECT * FROM pending_transactions")
     suspend fun getAllTransactions(): List<PendingTransaction>
 
-    @Query("SELECT * FROM pending_transactions WHERE entityId = :entityId AND noteBookId = :noteBookId")
-    suspend fun getTransactionsByEntityIdAndNoteBookId(entityId: Int, noteBookId: Int): List<PendingTransaction>
+    @Query("SELECT * FROM pending_transactions WHERE entityId = :entityId")
+    suspend fun getTransactionsByEntityId(entityId: Int): List<PendingTransaction>
 
     @Query("DELETE FROM pending_transactions WHERE id = :transactionId")
     suspend fun deleteTransactionById(transactionId: Int)

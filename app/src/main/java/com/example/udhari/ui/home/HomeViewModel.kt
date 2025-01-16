@@ -12,37 +12,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-
-data class HomeUiState(
-    val totalAmount: Int = 0,
-    val totalDebt: Int = 0,
-    val totalCredit: Int = 0,
-    val selectedNoteBookId: Int = 1,
-    val listOfPendingTransaction: List<PendingTransaction> = emptyList(),
-    val listOfNoteBook: List<NoteBookEntity> = emptyList(),
-    val listOfFinanceEntity: List<FinanceEntity> = emptyList(),
-    val noteBookNameString: String = "",
-    val noteBook: NoteBookEntity = NoteBookEntity(name = ""),
-    val updateNoteBookFlag: Boolean = false,
-    val openNoteBookDialog: Boolean = false,
-)
-
-sealed class HomeEvent {
-    data object FetchNoteBooks : HomeEvent()
-    data class FetchFinanceEntity(val id: Int) : HomeEvent()
-    data class FetchPendingTransaction(val entityId: Int, val noteBooks: Int) : HomeEvent()
-    data object InsertNoteBook : HomeEvent()
-    data class AddingNoteBookName(val noteBookName: String) : HomeEvent()
-    data object OpenNoteBookDialog : HomeEvent()
-    data object CloseNoteBookDialog : HomeEvent()
-    data class OnEditNoteBookClick(val noteBook: NoteBookEntity) : HomeEvent()
-    data object UpdateSelectedNoteBook : HomeEvent()
-    data class DeleteNoteBook(val noteBook: NoteBookEntity) : HomeEvent()
-    data class SelectNoteBook(val id: Int) : HomeEvent()
-}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -50,32 +22,14 @@ class HomeViewModel @Inject constructor(
     private val dataStore: PreferenceDataStore
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val _homeUiState = MutableStateFlow(HomeUiState())
+    val homeUiState: StateFlow<HomeUiState> = _homeUiState.asStateFlow()
 
-
-    fun onEvent(event: HomeEvent) {
+    fun onHomeScreenEvent(event: HomeEvent) {
         when (event) {
             is HomeEvent.FetchNoteBooks -> fetchNoteBooks()
 
-            is HomeEvent.FetchFinanceEntity -> {
-                viewModelScope.launch {
-                    val financeEntity = repository.getEntityByNoteBookId(event.id)
-                    _uiState.value = _uiState.value.copy(listOfFinanceEntity = financeEntity)
-                }
-            }
-
-            is HomeEvent.FetchPendingTransaction -> {
-                viewModelScope.launch {
-                    val pendingTransaction = repository.getTransactionsByEntityIdAndNoteBookId(
-                        event.entityId,
-                        event.noteBooks
-                    )
-                    _uiState.value =
-                        _uiState.value.copy(listOfPendingTransaction = pendingTransaction)
-                }
-            }
-
+            is HomeEvent.FetchFinanceEntity -> fetchFinanceEntity()
             is HomeEvent.InsertNoteBook -> insertNoteBook()
             is HomeEvent.OpenNoteBookDialog -> openNoteBookDialog()
             is HomeEvent.CloseNoteBookDialog -> closeNoteBookDialog()
@@ -87,33 +41,38 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun openNoteBookDialog() {
-        _uiState.value = _uiState.value.copy(openNoteBookDialog = true)
+
+    init {
+        fetchNoteBookId()
     }
-    private fun  closeNoteBookDialog() {
-        _uiState.value = _uiState.value.copy(noteBookNameString = "")
-        _uiState.value = _uiState.value.copy(openNoteBookDialog = false)
+
+    private fun openNoteBookDialog() {
+        _homeUiState.value = _homeUiState.value.copy(openNoteBookDialog = true)
+    }
+
+    private fun closeNoteBookDialog() {
+        _homeUiState.value = _homeUiState.value.copy(noteBookNameString = "")
+        _homeUiState.value = _homeUiState.value.copy(openNoteBookDialog = false)
     }
 
     private fun addingNoteBookName(noteBookName: String) {
-        _uiState.value = _uiState.value.copy(noteBookNameString = noteBookName)
+        _homeUiState.value = _homeUiState.value.copy(noteBookNameString = noteBookName)
     }
 
     private fun onEditNoteBookClick(noteBook: NoteBookEntity) {
-        _uiState.value = _uiState.value.copy(noteBookNameString = noteBook.name)
-        _uiState.value = _uiState.value.copy(noteBook = noteBook)
-        _uiState.value = _uiState.value.copy(updateNoteBookFlag = true)
-        Log.d("updateNoteBookDialog", _uiState.value.noteBookNameString)
+        _homeUiState.value = _homeUiState.value.copy(noteBookNameString = noteBook.name)
+        _homeUiState.value = _homeUiState.value.copy(noteBook = noteBook)
+        _homeUiState.value = _homeUiState.value.copy(updateNoteBookFlag = true)
         openNoteBookDialog()
     }
 
     private fun updateSelectedNoteBook() {
         viewModelScope.launch {
-            var noteBookId = _uiState.value.noteBook.id
-            var name = _uiState.value.noteBookNameString
+            var noteBookId = _homeUiState.value.noteBook.id
+            var name = _homeUiState.value.noteBookNameString
             repository.updateNoteBookEntityNameById(id = noteBookId, name = name)
-            _uiState.value = _uiState.value.copy(updateNoteBookFlag = false)
-            _uiState.value = _uiState.value.copy(noteBookNameString = "")
+            _homeUiState.value = _homeUiState.value.copy(updateNoteBookFlag = false)
+            _homeUiState.value = _homeUiState.value.copy(noteBookNameString = "")
             fetchNoteBooks()
             closeNoteBookDialog()
         }
@@ -121,9 +80,9 @@ class HomeViewModel @Inject constructor(
 
     private fun insertNoteBook() {
         viewModelScope.launch {
-            repository.insertNotebook(NoteBookEntity(name = _uiState.value.noteBookNameString))
+            repository.insertNotebook(NoteBookEntity(name = _homeUiState.value.noteBookNameString))
         }
-        _uiState.value = _uiState.value.copy(noteBookNameString = "")
+        _homeUiState.value = _homeUiState.value.copy(noteBookNameString = "")
         closeNoteBookDialog()
         fetchNoteBooks()
     }
@@ -131,7 +90,7 @@ class HomeViewModel @Inject constructor(
     private fun fetchNoteBooks() {
         viewModelScope.launch {
             val noteBooks = repository.getAllNotebooks()
-            _uiState.value = _uiState.value.copy(listOfNoteBook = noteBooks)
+            _homeUiState.value = _homeUiState.value.copy(listOfNoteBook = noteBooks)
         }
     }
 
@@ -144,8 +103,73 @@ class HomeViewModel @Inject constructor(
 
     private fun selectNoteBook(id: Int) {
         viewModelScope.launch {
-            dataStore.saveNoteBookId(id)
-            _uiState.value = _uiState.value.copy(selectedNoteBookId = id)
+            _homeUiState.value = _homeUiState.value.copy(selectedNoteBookId = id)
+            saveNoteBookId(id)
+            fetchFinanceEntity()
         }
     }
+
+
+    private fun saveNoteBookId(id: Int) {
+        viewModelScope.launch {
+            dataStore.saveNoteBookId(id)
+        }
+    }
+
+    private fun fetchNoteBookId() {
+        viewModelScope.launch {
+            dataStore.noteBookId.collect { id ->
+                Log.e("NoteBookId in adding viewmodel", "home:" + id.toString())
+                _homeUiState.value = _homeUiState.value.copy(selectedNoteBookId = id)
+            }
+        }
+    }
+
+
+    private fun fetchFinanceEntity() {
+        viewModelScope.launch {
+            dataStore.noteBookId
+                .map { noteBookId ->
+                    var id = noteBookId
+                    repository.getEntityByNoteBookId(id)
+                }
+                .collect { financeEntity ->
+                    _homeUiState.value =
+                        _homeUiState.value.copy(listOfFinanceEntity = financeEntity)
+                }
+        }
+    }
+
+
 }
+
+
+// --------------------------------------------------------------------------------------------
+
+data class HomeUiState(
+    val totalAmount: Int = 0,
+    val totalDebt: Int = 0,
+    val totalCredit: Int = 0,
+    val selectedNoteBookId: Int = 1,
+
+    val listOfNoteBook: List<NoteBookEntity> = emptyList(),
+    val listOfFinanceEntity: List<FinanceEntity> = emptyList(),
+    val noteBookNameString: String = "",
+    val noteBook: NoteBookEntity = NoteBookEntity(name = ""),
+    val updateNoteBookFlag: Boolean = false,
+    val openNoteBookDialog: Boolean = false,
+)
+
+sealed class HomeEvent {
+    data object FetchNoteBooks : HomeEvent()
+    data object FetchFinanceEntity : HomeEvent()
+    data object InsertNoteBook : HomeEvent()
+    data class AddingNoteBookName(val noteBookName: String) : HomeEvent()
+    data object OpenNoteBookDialog : HomeEvent()
+    data object CloseNoteBookDialog : HomeEvent()
+    data class OnEditNoteBookClick(val noteBook: NoteBookEntity) : HomeEvent()
+    data object UpdateSelectedNoteBook : HomeEvent()
+    data class DeleteNoteBook(val noteBook: NoteBookEntity) : HomeEvent()
+    data class SelectNoteBook(val id: Int) : HomeEvent()
+}
+

@@ -1,5 +1,7 @@
 package com.example.udhari.data.repositories
 
+import android.util.Log
+import androidx.compose.ui.platform.LocalGraphicsContext
 import com.example.udhari.data.dao.FinanceEntityDao
 import com.example.udhari.data.dao.NoteBookDao
 import com.example.udhari.data.dao.PendingTransactionDao
@@ -46,12 +48,11 @@ class FinanceRepository(
         }
     }
 
-    suspend fun getTransactionsByEntityIdAndNoteBookId(
+    suspend fun getTransactionsByEntityId(
         entityId: Int,
-        noteBookId: Int
     ): List<PendingTransaction> {
         return withContext(Dispatchers.IO) {
-            transactionDao.getTransactionsByEntityIdAndNoteBookId(entityId, noteBookId)
+            transactionDao.getTransactionsByEntityId(entityId)
         }
     }
 

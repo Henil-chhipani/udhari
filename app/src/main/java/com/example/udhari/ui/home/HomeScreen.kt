@@ -4,6 +4,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.graphics.drawable.Icon
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -42,6 +45,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -77,6 +81,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -89,12 +94,12 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
-    val uiState by homeViewModel.uiState.collectAsState()
+    val homeUiState by homeViewModel.homeUiState.collectAsState()
 
 
     HomeScreenUi(
-        uiState = uiState,
-        onEvent = homeViewModel::onEvent
+        uiState = homeUiState,
+        onEvent = homeViewModel::onHomeScreenEvent
     )
 }
 
@@ -113,6 +118,7 @@ fun HomeScreenUi(
 
     LaunchedEffect(Unit) {
         onEvent(HomeEvent.FetchNoteBooks)
+        onEvent(HomeEvent.FetchFinanceEntity)
     }
 
     fun openDrawer() {
@@ -154,86 +160,107 @@ fun HomeScreenUi(
                             color = uiFontColor,
                             modifier = Modifier.padding(horizontal = 20.dp)
                         )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            LazyColumn {
 
-                        LazyColumn {
-                            item {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                        .padding(horizontal = 10.dp),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Row(
+                                items(items = uiState.listOfFinanceEntity) { entity ->
+                                    Card(
                                         modifier = Modifier
-                                            .padding(16.dp)
-                                            .fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                globalNavController.navigate("entityDetails/${entity.id}")
+                                            }
+                                            .padding(8.dp)
+                                            .padding(horizontal = 10.dp),
+                                        shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Box(
+                                        Row(
                                             modifier = Modifier
-                                                .size(40.dp)
-                                                .background(
-                                                    color = Color.Gray,
-                                                    shape = RoundedCornerShape(20.dp)
-                                                ),
-                                            contentAlignment = Alignment.Center
+                                                .padding(16.dp)
+                                                .fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = "D",
-                                                color = Color.White,
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Dixit Jadav (Manthra)",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            Text(
-                                                text = "18 months ago",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .background(
+                                                        color = Color.Gray,
+                                                        shape = RoundedCornerShape(20.dp)
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                var firstChar = entity.name.first()
+                                                Text(
+                                                    text = firstChar.toString(),
+                                                    color = Color.White,
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(16.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = entity.name,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(
+                                                    text = "18 months ago",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = Color.Gray
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(16.dp))
 
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = "₹ 463",
-                                                color = extendedColorScheme.red.color,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 18.sp
-                                            )
-                                            Text(
-                                                text = "REMIND",
-                                                color = Color.Blue,
-                                                fontWeight = FontWeight.Medium,
-                                                fontSize = 14.sp
-                                            )
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = "₹ 463",
+                                                    color = extendedColorScheme.red.color,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 18.sp
+                                                )
+                                                Text(
+                                                    text = "REMIND",
+                                                    color = Color.Blue,
+                                                    fontWeight = FontWeight.Medium,
+                                                    fontSize = 14.sp
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        }
 
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.BottomEnd
-                        ) {
+                            }
+
                             FloatingActionButton(
                                 onClick = {
                                     globalNavController.navigate("addEntity")
                                 },
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 55.dp, end = 20.dp)
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(bottom = 55.dp, end = 20.dp)
+                                    .shadow(
+                                        elevation = 8.dp, // Add shadow for depth
+                                        shape = CircleShape
+                                    )
+                                    .size(56.dp) // Standard FAB size
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    ),
+                                elevation = FloatingActionButtonDefaults.elevation(
+                                    defaultElevation = 8.dp, // Elevation for the FAB
+                                    pressedElevation = 12.dp // Elevation when pressed
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
                                     contentDescription = "Add Icon",
+                                    tint = MaterialTheme.colorScheme.onPrimary, // Ensure the icon color contrasts with the background
+                                    modifier = Modifier.size(24.dp) // Adjust icon size
                                 )
                             }
                         }
@@ -281,8 +308,8 @@ fun HomeMenuDrawer(
                                     shape = RoundedCornerShape(
                                         topStart = 0.dp,
                                         bottomStart = 0.dp,
-                                        topEnd = 10.dp,
-                                        bottomEnd = 10.dp
+                                        topEnd = 12.dp,
+                                        bottomEnd = 12.dp
                                     ),
                                 )
                                 .clickable {
@@ -363,7 +390,7 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                var text = if(uiState.updateNoteBookFlag) "Update NoteBook" else "Add NoteBook"
+                var text = if (uiState.updateNoteBookFlag) "Update NoteBook" else "Add NoteBook"
                 Text(text = text, style = MaterialTheme.typography.titleMedium)
                 Log.d("inside dialog", uiState.noteBookNameString)
                 TextInput(
@@ -374,9 +401,16 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                     modifier = Modifier.padding()
                 )
                 Row(
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    ElevatedButton(
+                        onClick = { onEvent(HomeEvent.CloseNoteBookDialog) },
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Text("Cancel", modifier = Modifier.padding(horizontal = 0.dp))
+                    }
 
                     ElevatedButton(
                         onClick = {
@@ -384,24 +418,23 @@ fun AddNoteBookDialog(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                                 HomeEvent.InsertNoteBook
                             )
                         },
-                        modifier = Modifier.padding()
-                    ) {
-                        Icon(
-                            Icons.Outlined.Add,
-                            contentDescription = "Add",
-                            modifier = Modifier.padding(horizontal = 0.dp)
+                        modifier = Modifier.padding(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
+                    ) {
+                        if (!uiState.updateNoteBookFlag) {
+                            Icon(
+                                Icons.Outlined.Add,
+                                contentDescription = "Add",
+                                modifier = Modifier.padding(horizontal = 0.dp)
+                            )
+                        }
                         Text(
                             text = if (uiState.updateNoteBookFlag) "Update" else "Add",
                             modifier = Modifier.padding(horizontal = 0.dp)
                         )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    ElevatedButton(
-                        onClick = { onEvent(HomeEvent.CloseNoteBookDialog) },
-                        modifier = Modifier.padding()
-                    ) {
-                        Text("Cancel", modifier = Modifier.padding(horizontal = 0.dp))
                     }
                 }
             }

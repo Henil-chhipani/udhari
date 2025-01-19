@@ -58,7 +58,6 @@ class AddingEnftityViewModel @Inject constructor(
     fun fetchNoteBookId() {
         viewModelScope.launch {
             dataStore.noteBookId.collect { id ->
-
                 _addingEntityUiState.value = _addingEntityUiState.value.copy(noteBookId = id)
             }
         }

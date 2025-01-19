@@ -6,8 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.udhari.data.PreferenceDataStore
 import com.example.udhari.data.entity.FinanceEntity
 import com.example.udhari.data.entity.PendingTransaction
+import com.example.udhari.data.entity.TransactionType
 import com.example.udhari.data.repositories.FinanceRepository
+import com.example.udhari.ui.entityDetails.transactionForm.TransactionFormEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -25,6 +28,7 @@ class EntityDetailsViewModel @Inject constructor(
     fun onEvent(event: EntityDetailsUiEvent) {
         when (event) {
             is EntityDetailsUiEvent.AddEntityId -> addEntityId(event.id)
+            is EntityDetailsUiEvent.DeleteTransaction -> deleteTransaction(event.transaction)
         }
     }
 
@@ -74,7 +78,6 @@ class EntityDetailsViewModel @Inject constructor(
                         phoneNumber = "not available"
                     )
                 )
-                // Optionally, show an error message to the user
             }
         }
     }
@@ -91,22 +94,46 @@ class EntityDetailsViewModel @Inject constructor(
             try {
                 val transactions = repository.getTransactionsByEntityId(entityId)
                 _uiState.value = _uiState.value.copy(listOfPendingTransaction = transactions)
+                val totalAmount = calculateTotals(transactions)
+                _uiState.value = _uiState.value.copy(totalAmount = totalAmount)
             } catch (e: Exception) {
-                // Handle exceptions (e.g., network errors, database errors)
-                Log.e("EntityViewModel", "Error fetching transactions", e)
                 _uiState.value = _uiState.value.copy(listOfPendingTransaction = emptyList())
-                // Optionally, show an error message to the user
             }
         }
     }
+
+    private fun deleteTransaction(transaction: PendingTransaction) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteTransactionById(transaction.id)
+            fetchPendingTransaction()
+        }
+    }
+
+    fun calculateTotals(transactions: List<PendingTransaction>): Double {
+        val totalToGive = transactions
+            .filter { it.type == TransactionType.OWE } // Filter transactions to give
+            .sumOf { it.amount } // Sum their amounts
+
+        val totalToCollect = transactions
+            .filter { it.type == TransactionType.COLLECT } // Filter transactions to collect
+            .sumOf { it.amount } // Sum their amounts
+
+        val totalAmount = totalToCollect - totalToGive
+
+        return totalAmount
+    }
+
 }
+
 
 data class EntityDetailsUiState(
     val entityId: Int = 0,
     val entity: FinanceEntity = FinanceEntity(noteBookId = 0, name = "", phoneNumber = ""),
     val listOfPendingTransaction: List<PendingTransaction> = emptyList(),
+    val totalAmount: Double = 0.0,
 )
 
 sealed class EntityDetailsUiEvent {
     data class AddEntityId(val id: Int) : EntityDetailsUiEvent()
+    data class DeleteTransaction(val transaction: PendingTransaction) : EntityDetailsUiEvent()
 }

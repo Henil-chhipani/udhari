@@ -42,6 +42,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.compose.AppTheme
 import com.example.compose.LocalExtendedColors
 import com.example.udhari.data.entity.TransactionType
@@ -68,16 +71,32 @@ import kotlin.math.truncate
 
 
 @Composable
-fun TransactionForm(entityId: Int) {
-    TransactionFromUi()
+fun TransactionForm(entityId: Int, viewModel: TransactionFormViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(TransactionFormEvent.SetEntityId(entityId))
+    }
+    TransactionFromUi(
+        uiState = uiState,
+        onEvent = viewModel::onEvent
+    )
 }
 
 @Composable
-fun TransactionFromUi() {
+fun TransactionFromUi(
+    uiState: TransactionFormUiState,
+    onEvent: (TransactionFormEvent) -> Unit
+) {
+    LaunchedEffect(Unit) {
+        onEvent(TransactionFormEvent.FetchNoteBookId)
+        onEvent(TransactionFormEvent.GetTodayDate)
+    }
+    LaunchedEffect(uiState.listOfTransaction) {
+        onEvent(TransactionFormEvent.FetchTransactions)
+    }
     val globalNavController = GlobalNavController.current
     var extendedColorScheme = LocalExtendedColors.current
     var expanded by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf<TransactionType?>(null) }
     Scaffold(
         topBar = {
             TopBar(
@@ -104,22 +123,22 @@ fun TransactionFromUi() {
                 ) {
 
                     TextInput(
-                        value = "",
-                        onValueChange = { },
+                        value = uiState.amount,
+                        onValueChange = { onEvent(TransactionFormEvent.AmountChanged(it)) },
                         label = "Add Amount",
                         keyBoardType = KeyboardType.Decimal,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
                     TextInput(
-                        value = "",
-                        onValueChange = { },
+                        value = uiState.description,
+                        onValueChange = { onEvent(TransactionFormEvent.DescriptionChanged(it)) },
                         label = "Add Payment description",
                         keyBoardType = KeyboardType.Text,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
-                    var option = selectedOption?.name ?: ""
+                    var option = uiState.type?.name ?: "Select Transaction Type"
                     OutlinedTextField(
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge,
@@ -134,7 +153,6 @@ fun TransactionFromUi() {
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
-                            // Dropdown menu
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
@@ -143,7 +161,7 @@ fun TransactionFromUi() {
                                 TransactionType.values().forEach { transactionType ->
                                     DropdownMenuItem(
                                         onClick = {
-                                            selectedOption = transactionType
+                                            onEvent(TransactionFormEvent.TypeChange(transactionType))
                                             expanded = false
                                         },
                                         text = {
@@ -160,7 +178,7 @@ fun TransactionFromUi() {
                             .clickable { expanded = true },
                         colors = TextFieldDefaults.colors(
                             disabledContainerColor = MaterialTheme.colorScheme.surface,
-                            disabledTextColor = if (selectedOption?.name == "OWE") extendedColorScheme.red.color else if (selectedOption?.name == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTextColor = if (option == "OWE") extendedColorScheme.red.color else if (option == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledIndicatorColor = MaterialTheme.colorScheme.onSurface,
                             disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -170,14 +188,14 @@ fun TransactionFromUi() {
                     )
 
                     OutlinedTextField(
-                        value = getTodayDate(),
+                        value = uiState.date,
                         modifier = Modifier.padding(vertical = 10.dp),
                         readOnly = true,
                         enabled = false,
                         onValueChange = {},
                         colors = TextFieldDefaults.colors(
                             disabledContainerColor = MaterialTheme.colorScheme.surface,
-                            disabledTextColor = if (selectedOption?.name == "OWE") extendedColorScheme.red.color else if (selectedOption?.name == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
                             disabledIndicatorColor = MaterialTheme.colorScheme.onSurface,
                             disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -186,10 +204,9 @@ fun TransactionFromUi() {
                         ),
                     )
 
-
                     FloatingActionButton(
                         onClick = {
-
+                            onEvent(TransactionFormEvent.OnCrate)
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -214,88 +231,11 @@ fun TransactionFromUi() {
                     }
 
                 }
-//                LazyColumn {
-//                    items(items = ) { entity ->
-//                        Card(
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .padding(
-//                                    horizontal = 16.dp,
-//                                    vertical = 8.dp
-//                                ),
-//                            elevation = CardDefaults.cardElevation(
-//                                defaultElevation = 2.dp,
-//                                pressedElevation = 1.dp,
-//                                focusedElevation = 3.dp,
-//                                hoveredElevation = 4.dp,
-//                                draggedElevation = 5.dp
-//                            )
-//                        ) {
-//                            Row(
-//                                horizontalArrangement = Arrangement.SpaceBetween,
-//                                verticalAlignment = Alignment.CenterVertically,
-//                                modifier = Modifier
-//                                    .fillMaxWidth()
-//                                    .padding(16.dp)
-//                            ) {
-//                                Column(
-//                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-//                                ) {
-//                                    Text(
-//                                        text = entity.name,
-//                                        style = MaterialTheme.typography.bodyLarge,
-//                                        color = MaterialTheme.colorScheme.onSurface
-//                                    )
-//                                    Text(
-//                                        text = entity.phoneNumber,
-//                                        style = MaterialTheme.typography.bodySmall,
-//                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                    )
-//                                }
-//
-//                                Row(
-//                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                                    verticalAlignment = Alignment.CenterVertically
-//                                ) {
-//                                    IconButton(
-//                                        onClick = { /* Handle Edit Action */ },
-//                                        modifier = Modifier.size(32.dp) // Uniform size for buttons
-//                                    ) {
-//                                        Icon(
-//                                            imageVector = Icons.Default.Edit,
-//                                            contentDescription = "Edit",
-//                                            modifier = Modifier.size(20.dp),
-//                                            tint = MaterialTheme.colorScheme.primary // Themed color for the icon
-//                                        )
-//                                    }
-//                                    IconButton(
-//                                        onClick = { /* Handle Delete Action */ },
-//                                        modifier = Modifier.size(32.dp)
-//                                    ) {
-//                                        Icon(
-//                                            imageVector = Icons.Default.Delete,
-//                                            contentDescription = "Delete",
-//                                            modifier = Modifier.size(20.dp),
-//                                            tint = MaterialTheme.colorScheme.error // Error color for delete
-//                                        )
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//
-//                }
+
             }
         },
         bottomBar = { }
     )
-}
-
-@SuppressLint("NewApi")
-fun getTodayDate(): String {
-    val today = LocalDate.now()
-    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy") // Format as needed
-    return today.format(formatter)
 }
 
 
@@ -336,6 +276,9 @@ fun TextInput(
 @Composable
 fun TransactionFormUiPreview() {
     AppTheme {
-        TransactionFromUi()
+        TransactionFromUi(
+            uiState = TransactionFormUiState(),
+            onEvent = {}
+        )
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +73,9 @@ import kotlin.math.truncate
 @Composable
 fun TransactionForm(entityId: Int, viewModel: TransactionFormViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(TransactionFormEvent.SetEntityId(entityId))
+    }
     TransactionFromUi(
         uiState = uiState,
         onEvent = viewModel::onEvent
@@ -83,6 +87,13 @@ fun TransactionFromUi(
     uiState: TransactionFormUiState,
     onEvent: (TransactionFormEvent) -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        onEvent(TransactionFormEvent.FetchNoteBookId)
+        onEvent(TransactionFormEvent.GetTodayDate)
+    }
+    LaunchedEffect(uiState.listOfTransaction) {
+        onEvent(TransactionFormEvent.FetchTransactions)
+    }
     val globalNavController = GlobalNavController.current
     var extendedColorScheme = LocalExtendedColors.current
     var expanded by remember { mutableStateOf(false) }
@@ -177,7 +188,7 @@ fun TransactionFromUi(
                     )
 
                     OutlinedTextField(
-                        value = getTodayDate(),
+                        value = uiState.date,
                         modifier = Modifier.padding(vertical = 10.dp),
                         readOnly = true,
                         enabled = false,
@@ -195,7 +206,7 @@ fun TransactionFromUi(
 
                     FloatingActionButton(
                         onClick = {
-
+                            onEvent(TransactionFormEvent.OnCrate)
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -220,88 +231,11 @@ fun TransactionFromUi(
                     }
 
                 }
-//                LazyColumn {
-//                    items(items = ) { entity ->
-//                        Card(
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .padding(
-//                                    horizontal = 16.dp,
-//                                    vertical = 8.dp
-//                                ),
-//                            elevation = CardDefaults.cardElevation(
-//                                defaultElevation = 2.dp,
-//                                pressedElevation = 1.dp,
-//                                focusedElevation = 3.dp,
-//                                hoveredElevation = 4.dp,
-//                                draggedElevation = 5.dp
-//                            )
-//                        ) {
-//                            Row(
-//                                horizontalArrangement = Arrangement.SpaceBetween,
-//                                verticalAlignment = Alignment.CenterVertically,
-//                                modifier = Modifier
-//                                    .fillMaxWidth()
-//                                    .padding(16.dp)
-//                            ) {
-//                                Column(
-//                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-//                                ) {
-//                                    Text(
-//                                        text = entity.name,
-//                                        style = MaterialTheme.typography.bodyLarge,
-//                                        color = MaterialTheme.colorScheme.onSurface
-//                                    )
-//                                    Text(
-//                                        text = entity.phoneNumber,
-//                                        style = MaterialTheme.typography.bodySmall,
-//                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                    )
-//                                }
-//
-//                                Row(
-//                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                                    verticalAlignment = Alignment.CenterVertically
-//                                ) {
-//                                    IconButton(
-//                                        onClick = { /* Handle Edit Action */ },
-//                                        modifier = Modifier.size(32.dp) // Uniform size for buttons
-//                                    ) {
-//                                        Icon(
-//                                            imageVector = Icons.Default.Edit,
-//                                            contentDescription = "Edit",
-//                                            modifier = Modifier.size(20.dp),
-//                                            tint = MaterialTheme.colorScheme.primary // Themed color for the icon
-//                                        )
-//                                    }
-//                                    IconButton(
-//                                        onClick = { /* Handle Delete Action */ },
-//                                        modifier = Modifier.size(32.dp)
-//                                    ) {
-//                                        Icon(
-//                                            imageVector = Icons.Default.Delete,
-//                                            contentDescription = "Delete",
-//                                            modifier = Modifier.size(20.dp),
-//                                            tint = MaterialTheme.colorScheme.error // Error color for delete
-//                                        )
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//
-//                }
+
             }
         },
         bottomBar = { }
     )
-}
-
-@SuppressLint("NewApi")
-fun getTodayDate(): String {
-    val today = LocalDate.now()
-    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy") // Format as needed
-    return today.format(formatter)
 }
 
 

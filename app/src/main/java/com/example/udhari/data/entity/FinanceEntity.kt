@@ -20,5 +20,8 @@ data class FinanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0, // Unique ID for each entity
     val noteBookId: Int,
     val name: String, // Name of the entity (e.g., Raj, School)
-    val phoneNumber: String
+    val phoneNumber: String,
+    val totalOwe: Double = 0.0, // Total amount to give (optional)
+    val totalCollect: Double = 0.0
 )
+

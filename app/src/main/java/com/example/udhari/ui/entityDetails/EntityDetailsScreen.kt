@@ -1,6 +1,7 @@
 package com.example.udhari.ui.entityDetails
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,19 +29,26 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalProvider
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.compose.ExtendedColorScheme
+import com.example.compose.LocalExtendedColors
+import com.example.udhari.data.entity.PendingTransaction
+import com.example.udhari.data.entity.TransactionType
 
 @Composable
 fun EntityDetailsScreen(
@@ -61,7 +69,7 @@ fun EntityDetailsUi(
     onEvent: (EntityDetailsUiEvent) -> Unit
 ) {
     var globalNavController = GlobalNavController.current
-
+    var extendedColorScheme = LocalExtendedColors.current
     Scaffold(
         topBar = {
             TopBar(
@@ -81,18 +89,21 @@ fun EntityDetailsUi(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(innerpadding)
+                .padding(horizontal = 20.dp)
         ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+                    .fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             ) {
-
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 30.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 16.dp)
+                ) {
                     Row() {
                         Box(
                             modifier = Modifier
@@ -113,8 +124,11 @@ fun EntityDetailsUi(
                         }
                         Spacer(modifier = Modifier.padding(horizontal = 7.dp))
                         Column {
-                            Text(uiState.entity.name)
-                            Text(uiState.entity.phoneNumber)
+                            Text(uiState.entity.name, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                uiState.entity.phoneNumber,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(
@@ -124,15 +138,60 @@ fun EntityDetailsUi(
                         )
                     }
                 }
+
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 8.dp)
+                        .padding(start = 16.dp, end = 12.dp)
+                ) {
+//                    val totalstr = if (uiState.totalAmount < 0) {
+//                        "Overall balance"
+//                    } else {
+//                        "They owe you"
+//                    }
+                    val textColor = if (uiState.totalAmount < 0) {
+                        extendedColorScheme.red.color
+                    } else {
+                        extendedColorScheme.green.color
+                    }
+                    Text(
+                        "Total Amount:",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Text(
+                            "${uiState.totalAmount}",
+                            modifier = Modifier.padding(vertical = 0.dp, horizontal = 12.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = textColor
+                        )
+                    }
+
+                }
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(modifier = Modifier.padding()) {
+
+                LazyColumn(modifier = Modifier) {
+                    item {
+                        Text("Transactions")
+                    }
                     items(items = uiState.listOfPendingTransaction) { transaction ->
-                        Card(
-                            modifier = Modifier.padding(innerpadding)
-                        ) {
-                            Text("${transaction.id}")
-                        }
+                        TransactionCard(
+                            type = transaction.type,
+                            amount = transaction.amount.toString(),
+                            description = transaction.description,
+                            extendedColorScheme = extendedColorScheme,
+                            onDelete = { onEvent(EntityDetailsUiEvent.DeleteTransaction(transaction)) }
+                        )
                     }
                 }
 
@@ -143,7 +202,7 @@ fun EntityDetailsUi(
                     containerColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(bottom = 55.dp, end = 20.dp)
+                        .padding(bottom = 35.dp, end = 0.dp)
                         .shadow(
                             elevation = 8.dp, // Add shadow for depth
                             shape = CircleShape
@@ -165,6 +224,52 @@ fun EntityDetailsUi(
                         modifier = Modifier.size(24.dp) // Adjust icon size
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun TransactionCard(
+    type: TransactionType,
+    amount: String,
+    description: String,
+    extendedColorScheme: ExtendedColorScheme,
+    onDelete: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor =
+            if (type == TransactionType.OWE) extendedColorScheme.red.colorContainer else extendedColorScheme.green.colorContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = amount,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = { onDelete() }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(16.dp)
+                )
             }
         }
     }

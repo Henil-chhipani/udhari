@@ -8,7 +8,7 @@ Udhari is a simple and intuitive app designed to help you keep track of all your
 |-------------------|-------------------|
 | <img src="screenshot/personalNoteBook.png" alt="Personal Notebook Screenshot" width="200"> | <img src="screenshot/DarkPersonalNoteBook.png" alt="Business Notebook Screenshot" width="200"> |
 
-For more screenshots, check out the [screenshots.md](screenshot.md) file.
+For more screenshots, check out the [screenshots.md](SCREENSHOT.md) file.
 
 ---
 

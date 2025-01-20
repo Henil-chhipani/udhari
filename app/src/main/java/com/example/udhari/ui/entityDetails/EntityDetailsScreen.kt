@@ -1,5 +1,6 @@
 package com.example.udhari.ui.entityDetails
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,12 +54,13 @@ import com.example.udhari.data.entity.TransactionType
 @Composable
 fun EntityDetailsScreen(
     entityId: Int,
+    noteBookId: Int,
     viewModel: EntityDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val onEvent = viewModel::onEvent
     LaunchedEffect(Unit) {
-        onEvent(EntityDetailsUiEvent.AddEntityId(entityId))
+        onEvent(EntityDetailsUiEvent.AddId(entityId,noteBookId))
     }
     EntityDetailsUi(uiState = uiState, onEvent = viewModel::onEvent)
 }
@@ -197,7 +199,8 @@ fun EntityDetailsUi(
 
                 FloatingActionButton(
                     onClick = {
-                        globalNavController.navigate("transactionForm/${uiState.entityId}")
+                        Log.e("transection form path","path: transactionForm/${uiState.noteBookId}/${uiState.entityId}")
+                        globalNavController.navigate("transactionForm/${uiState.noteBookId}/${uiState.entityId}")
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier

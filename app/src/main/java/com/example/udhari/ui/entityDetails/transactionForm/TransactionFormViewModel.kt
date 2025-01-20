@@ -28,21 +28,29 @@ class TransactionFormViewModel @Inject constructor(
 
     fun onEvent(event: TransactionFormEvent) {
         when (event) {
-            is TransactionFormEvent.SetEntityId -> _uiState.value =
-                _uiState.value.copy(entityId = event.entityId)
-
+            is TransactionFormEvent.SetId -> setId(
+                entityId = event.entityId,
+                noteBookId = event.noteBookId
+            )
             is TransactionFormEvent.AmountChanged -> amountChange(event.amount)
             is TransactionFormEvent.DescriptionChanged -> descriptionChange(event.description)
             is TransactionFormEvent.TypeChange -> typeChange(event.type)
             TransactionFormEvent.GetTodayDate -> getTodayDate()
             TransactionFormEvent.OnCrate -> insertTransaction()
-            TransactionFormEvent.FetchNoteBookId -> fetchNoteBookId()
             TransactionFormEvent.FetchTransactions -> fetchTransactions()
         }
     }
 
     private fun amountChange(amount: String) {
         _uiState.value = _uiState.value.copy(amount = amount)
+    }
+
+    private fun setId(entityId: Int, noteBookId: Int) {
+        _uiState.value = _uiState.value.copy(
+            entityId = entityId,
+            noteBookId = noteBookId
+        )
+        Log.e("ids", "${_uiState.value.entityId}, ${_uiState.value.noteBookId}")
     }
 
     private fun descriptionChange(description: String) {
@@ -62,16 +70,9 @@ class TransactionFormViewModel @Inject constructor(
         return date
     }
 
-    fun fetchNoteBookId() {
-        viewModelScope.launch {
-            dataStore.noteBookId.collect { id ->
-                _uiState.value = _uiState.value.copy(noteBookId = id)
-            }
-        }
-    }
-
     private fun insertTransaction() {
         viewModelScope.launch {
+            Log.e("insert", "insert ${_uiState.value}")
             repository.insertTransaction(
                 PendingTransaction(
                     noteBookId = _uiState.value.noteBookId,
@@ -101,8 +102,7 @@ class TransactionFormViewModel @Inject constructor(
 }
 
 sealed class TransactionFormEvent {
-    data class SetEntityId(val entityId: Int) : TransactionFormEvent()
-    data object FetchNoteBookId : TransactionFormEvent()
+    data class SetId(val entityId: Int, val noteBookId: Int) : TransactionFormEvent()
     data class AmountChanged(val amount: String) : TransactionFormEvent()
     data class DescriptionChanged(val description: String) : TransactionFormEvent()
     data class TypeChange(val type: TransactionType) : TransactionFormEvent()
@@ -112,8 +112,8 @@ sealed class TransactionFormEvent {
 }
 
 data class TransactionFormUiState(
-    val noteBookId: Int = 0,
-    val entityId: Int = 0,
+    val entityId: Int = -1,
+    val noteBookId: Int = -1,
     val amount: String = "",
     val description: String = "",
     val date: String = "",

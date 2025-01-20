@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.example.udhari.data.entity.FinanceEntity
+import com.example.udhari.data.entity.Totals
 
 
 @Dao
@@ -31,5 +32,14 @@ interface FinanceEntityDao {
 
     @Query("SELECT * FROM finance_entities WHERE name LIKE '%' || :name || '%'")
     suspend fun searchEntitiesByName(name: String): List<FinanceEntity>
+
+    @Query("""
+        SELECT 
+            SUM(CASE WHEN type = 'OWE' THEN amount ELSE 0 END) AS totalOwe,
+            SUM(CASE WHEN type = 'COLLECT' THEN amount ELSE 0 END) AS totalCollect
+        FROM pending_transactions
+        WHERE entityId = :entityId
+    """)
+    suspend fun getTotalsForEntity(entityId: Int): Totals
 
 }

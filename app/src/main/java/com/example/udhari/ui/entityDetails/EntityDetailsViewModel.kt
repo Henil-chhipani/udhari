@@ -27,13 +27,17 @@ class EntityDetailsViewModel @Inject constructor(
 
     fun onEvent(event: EntityDetailsUiEvent) {
         when (event) {
-            is EntityDetailsUiEvent.AddEntityId -> addEntityId(event.id)
+            is EntityDetailsUiEvent.AddId -> addId(
+                entityId = event.entityId,
+                noteBookId = event.noteBookId
+            )
             is EntityDetailsUiEvent.DeleteTransaction -> deleteTransaction(event.transaction)
         }
     }
 
-    fun addEntityId(entityId: Int) {
+    fun addId(entityId: Int, noteBookId: Int) {
         _uiState.value = _uiState.value.copy(entityId = entityId)
+        _uiState.value = _uiState.value.copy(noteBookId = noteBookId)
         fetchEntity()
         fetchPendingTransaction()
     }
@@ -61,7 +65,7 @@ class EntityDetailsViewModel @Inject constructor(
                     // Handle the case where the entity is not found
                     _uiState.value = _uiState.value.copy(
                         entity = FinanceEntity(
-                            noteBookId = 0,
+                            noteBookId = -1,
                             name = "not available",
                             phoneNumber = "not available"
                         )
@@ -127,13 +131,14 @@ class EntityDetailsViewModel @Inject constructor(
 
 
 data class EntityDetailsUiState(
-    val entityId: Int = 0,
+    val noteBookId: Int = -1,
+    val entityId: Int = -1,
     val entity: FinanceEntity = FinanceEntity(noteBookId = 0, name = "", phoneNumber = ""),
     val listOfPendingTransaction: List<PendingTransaction> = emptyList(),
     val totalAmount: Double = 0.0,
 )
 
 sealed class EntityDetailsUiEvent {
-    data class AddEntityId(val id: Int) : EntityDetailsUiEvent()
+    data class AddId(val entityId: Int, val noteBookId: Int) : EntityDetailsUiEvent()
     data class DeleteTransaction(val transaction: PendingTransaction) : EntityDetailsUiEvent()
 }

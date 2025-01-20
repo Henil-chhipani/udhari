@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.example.udhari.data.entity.NoteBookEntity
+import com.example.udhari.data.entity.Totals
 
 @Dao
 interface NoteBookDao {
@@ -26,4 +27,13 @@ interface NoteBookDao {
 
     @Query("DELETE FROM note_book WHERE id = :id")
     suspend fun deleteNotebookById(id: Int)
+
+    @Query("""
+        SELECT 
+            SUM(CASE WHEN type = 'OWE' THEN amount ELSE 0 END) AS totalOwe,
+            SUM(CASE WHEN type = 'COLLECT' THEN amount ELSE 0 END) AS totalCollect
+        FROM pending_transactions
+        WHERE noteBookId = :noteBookId
+    """)
+    suspend fun getTotalsForNoteBook(noteBookId: Int): Totals
 }

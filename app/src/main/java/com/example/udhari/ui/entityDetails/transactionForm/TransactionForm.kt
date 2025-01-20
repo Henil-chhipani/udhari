@@ -61,7 +61,7 @@ import com.example.compose.AppTheme
 import com.example.compose.LocalExtendedColors
 import com.example.udhari.data.entity.TransactionType
 import com.example.udhari.navigation.GlobalNavController
-import com.example.udhari.ui.addingEntity.AddingEntityEvent
+import com.example.udhari.ui.noteBookDetails.addingEntity.AddingEntityEvent
 import com.example.udhari.ui.commonCoponents.BackBtn
 import com.example.udhari.ui.commonCoponents.TopBar
 import java.time.LocalDate
@@ -71,10 +71,14 @@ import kotlin.math.truncate
 
 
 @Composable
-fun TransactionForm(entityId: Int, viewModel: TransactionFormViewModel = hiltViewModel()) {
+fun TransactionForm(
+    noteBookId: Int,
+    entityId: Int,
+    viewModel: TransactionFormViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(Unit) {
-        viewModel.onEvent(TransactionFormEvent.SetEntityId(entityId))
+        viewModel.onEvent(TransactionFormEvent.SetId(entityId = entityId, noteBookId = noteBookId))
     }
     TransactionFromUi(
         uiState = uiState,
@@ -88,7 +92,6 @@ fun TransactionFromUi(
     onEvent: (TransactionFormEvent) -> Unit
 ) {
     LaunchedEffect(Unit) {
-        onEvent(TransactionFormEvent.FetchNoteBookId)
         onEvent(TransactionFormEvent.GetTodayDate)
     }
     LaunchedEffect(uiState.listOfTransaction) {

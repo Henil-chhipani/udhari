@@ -8,6 +8,7 @@ import com.example.udhari.data.dao.PendingTransactionDao
 import com.example.udhari.data.entity.FinanceEntity
 import com.example.udhari.data.entity.NoteBookEntity
 import com.example.udhari.data.entity.PendingTransaction
+import com.example.udhari.data.entity.Totals
 import com.example.udhari.data.entity.TransactionType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,6 +21,7 @@ class FinanceRepository(
     // Transactions
     suspend fun insertTransaction(transaction: PendingTransaction) {
         withContext(Dispatchers.IO) {
+            Log.d("FinanceRepository", "Inserting transaction: $transaction")
             transactionDao.insertTransaction(transaction)
         }
     }
@@ -68,7 +70,14 @@ class FinanceRepository(
         }
     }
 
-    // Entities
+    // get overall total of data base regardless of notebook and entity
+    suspend fun getOverallTotals(): Totals {
+        return withContext(Dispatchers.IO) {
+            transactionDao.getOverallTotals()
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------
     suspend fun insertEntity(entity: FinanceEntity) {
         withContext(Dispatchers.IO) {
             entityDao.insertEntity(entity)
@@ -105,12 +114,33 @@ class FinanceRepository(
         }
     }
 
+    suspend fun getEntityByNoteBookIdAndTotals(notebookId: Int): List<FinanceEntity> =
+        withContext(Dispatchers.IO) {
+            val entities = entityDao.getEntitiesByNoteBookId(notebookId)
+            return@withContext entities.map {
+                val totals = entityDao.getTotalsForEntity(it.id)
+                it.copy(
+                    totalOwe = totals.totalOwe,
+                    totalCollect = totals.totalCollect
+                )
+            }
+        }
+
+
     suspend fun searchEntitiesByName(name: String): List<FinanceEntity> {
         return withContext(Dispatchers.IO) {
             entityDao.searchEntitiesByName(name)
         }
     }
 
+    // provide total for particular entity
+    suspend fun getTotalsForEntity(entityId: Int): Totals {
+        return withContext(Dispatchers.IO) {
+            entityDao.getTotalsForEntity(entityId)
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------
     suspend fun insertNotebook(notebook: NoteBookEntity) {
         withContext(Dispatchers.IO) {
             notebookDao.insertNoteBookEntity(notebook)
@@ -122,7 +152,8 @@ class FinanceRepository(
             notebookDao.updateNoteBookEntity(notebook)
         }
     }
-    suspend fun updateNoteBookEntityNameById(name: String, id:Int){
+
+    suspend fun updateNoteBookEntityNameById(name: String, id: Int) {
         withContext(Dispatchers.IO) {
             notebookDao.updateNoteBookEntityNameById(name, id)
         }
@@ -143,6 +174,26 @@ class FinanceRepository(
     suspend fun getAllNotebooks(): List<NoteBookEntity> {
         return withContext(Dispatchers.IO) {
             notebookDao.getAllNotebooks()
+        }
+    }
+
+    suspend fun getAllNotebooksWithTotals(): List<NoteBookEntity> =
+        withContext(Dispatchers.IO) {
+            val notebooks = notebookDao.getAllNotebooks()
+            return@withContext notebooks.map { notebook ->
+                val totals = notebookDao.getTotalsForNoteBook(notebook.id)
+                notebook.copy(
+                    totalOwe = totals.totalOwe,
+                    totalCollect = totals.totalCollect
+                )
+            }
+        }
+
+
+    // provide total for particular noteBook
+    suspend fun getTotalsForNoteBook(noteBookId: Int): Totals {
+        return withContext(Dispatchers.IO) {
+            notebookDao.getTotalsForNoteBook(noteBookId)
         }
     }
 }

@@ -1,13 +1,9 @@
 package com.example.udhari.ui.entityDetails.transactionForm
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.provider.MediaStore.Audio.Radio
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,28 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -50,24 +36,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.compose.AppTheme
 import com.example.compose.LocalExtendedColors
+import com.example.udhari.R
 import com.example.udhari.data.entity.TransactionType
 import com.example.udhari.navigation.GlobalNavController
-import com.example.udhari.ui.noteBookDetails.addingEntity.AddingEntityEvent
 import com.example.udhari.ui.commonCoponents.BackBtn
+import com.example.udhari.ui.commonCoponents.TextInput
+import com.example.udhari.ui.commonCoponents.ToastMessage
 import com.example.udhari.ui.commonCoponents.TopBar
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import kotlin.math.sin
-import kotlin.math.truncate
 
 
 @Composable
@@ -91,15 +75,14 @@ fun TransactionFromUi(
     uiState: TransactionFormUiState,
     onEvent: (TransactionFormEvent) -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        onEvent(TransactionFormEvent.GetTodayDate)
-    }
-    LaunchedEffect(uiState.listOfTransaction) {
-        onEvent(TransactionFormEvent.FetchTransactions)
-    }
     val globalNavController = GlobalNavController.current
     var extendedColorScheme = LocalExtendedColors.current
     var expanded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        onEvent(TransactionFormEvent.GetTodayDate)
+        onEvent(TransactionFormEvent.SetGlobalNavController(globalNavController))
+    }
+
     Scaffold(
         topBar = {
             TopBar(
@@ -113,14 +96,16 @@ fun TransactionFromUi(
                 }
             )
         },
-        content = { ineerpadding ->
-            Column(
+        content = { paddingValue ->
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(ineerpadding)
+                    .padding(paddingValue)
+                    .fillMaxSize()
                     .padding(horizontal = 20.dp),
             ) {
+
                 Column(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -130,7 +115,9 @@ fun TransactionFromUi(
                         onValueChange = { onEvent(TransactionFormEvent.AmountChanged(it)) },
                         label = "Add Amount",
                         keyBoardType = KeyboardType.Decimal,
-                        modifier = Modifier.padding(vertical = 10.dp)
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        isError = uiState.isAmountError,
+                        errorMessage = uiState.amountError
                     )
 
                     TextInput(
@@ -138,11 +125,23 @@ fun TransactionFromUi(
                         onValueChange = { onEvent(TransactionFormEvent.DescriptionChanged(it)) },
                         label = "Add Payment description",
                         keyBoardType = KeyboardType.Text,
-                        modifier = Modifier.padding(vertical = 10.dp)
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        isError = uiState.isDescriptionError,
+                        errorMessage = uiState.descriptionError
                     )
 
                     var option = uiState.type?.name ?: "Select Transaction Type"
                     OutlinedTextField(
+                        isError = uiState.isTypeError,
+                        supportingText = {
+                            if (uiState.isTypeError) {
+                                Text(
+                                    text = uiState.typeError,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = extendedColorScheme.red.onColorContainer
+                                )
+                            }
+                        },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge,
                         value = option,
@@ -180,13 +179,13 @@ fun TransactionFromUi(
                             .padding(vertical = 10.dp)
                             .clickable { expanded = true },
                         colors = TextFieldDefaults.colors(
-                            disabledContainerColor = MaterialTheme.colorScheme.surface,
+                            disabledContainerColor = if(uiState.isTypeError) extendedColorScheme.red.colorContainer else MaterialTheme.colorScheme.surface,
                             disabledTextColor = if (option == "OWE") extendedColorScheme.red.color else if (option == "COLLECT") extendedColorScheme.green.color else MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledIndicatorColor = MaterialTheme.colorScheme.onSurface,
                             disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                     )
 
@@ -209,7 +208,7 @@ fun TransactionFromUi(
 
                     FloatingActionButton(
                         onClick = {
-                            onEvent(TransactionFormEvent.OnCrate)
+                            onEvent(TransactionFormEvent.InsertTransaction)
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -232,41 +231,58 @@ fun TransactionFromUi(
                             Text(text = "Create", style = MaterialTheme.typography.bodyLarge)
                         }
                     }
+                    ToastMessage()
+                }
 
+                FloatingActionButton(
+                    onClick = {
+                        if (uiState.isVoiceRecognitionStart) {
+                            onEvent(TransactionFormEvent.StopVoiceRecognition)
+                        } else {
+                            onEvent(TransactionFormEvent.StartVoiceRecognition)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = 15.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = CircleShape
+                        )
+                        .size(56.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        ),
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 8.dp,
+                        pressedElevation = 12.dp
+                    )
+                ) {
+                    Crossfade(
+                        targetState = uiState.isVoiceRecognitionStart,
+                        label = ""
+                    ) { isRecording ->
+                        if (isRecording) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_stop),
+                                contentDescription = "Stop Voice Command",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_mic),
+                                contentDescription = "Start Voice Command",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                 }
 
             }
         },
         bottomBar = { }
-    )
-}
-
-
-@Composable
-fun TextInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    modifier: Modifier = Modifier,
-    singleLine: Boolean = true,
-    enabled: Boolean = true,
-    readOnly: Boolean = false,
-    keyBoardType: KeyboardType
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier,
-        label = {
-            Text(text = label)
-        },
-        textStyle = MaterialTheme.typography.bodyLarge,
-        readOnly = readOnly,
-        enabled = enabled,
-        singleLine = singleLine,
-        keyboardOptions = KeyboardOptions.Default.copy(
-            keyboardType = keyBoardType,
-        )
     )
 }
 

@@ -19,17 +19,16 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
-    onIconClick: () -> Unit ,
-    title: @Composable () -> Unit,
+    onIconClick: () -> Unit,
+    title: @Composable () -> Unit = { AppIcon() },
     icon: @Composable () -> Unit,
-    ) {
+) {
     CenterAlignedTopAppBar(
         modifier = Modifier.padding(horizontal = 5.dp),
         title = {
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.Bottom,
-
                 content = { title() }
             )
         },

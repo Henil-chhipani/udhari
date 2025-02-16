@@ -1,36 +1,68 @@
 package com.example.udhari.ui.notebook
 
+import android.app.Application
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.udhari.data.PreferenceDataStore
 import com.example.udhari.data.entity.NoteBookEntity
 import com.example.udhari.data.repositories.FinanceRepository
-import com.example.udhari.ui.noteBookDetails.NoteBookDetailsUiState
+import com.example.udhari.navigation.Routes
+import com.example.udhari.ui.base.BaseViewModel
+import com.example.udhari.utils.SpeechRecognitionHelper
+import com.example.udhari.utils.ToastManager
+import com.example.udhari.utils.elseCaseHandling
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class NoteBookViewModel @Inject constructor(
     private val repository: FinanceRepository,
-    private val dataStore: PreferenceDataStore
-) : ViewModel() {
+    private val speechRecognitionHelper: SpeechRecognitionHelper,
+
+    ) : BaseViewModel(speechRecognitionHelper) {
 
     private val _uiState = MutableStateFlow(NoteBookUiState())
     val uiState = _uiState.asStateFlow()
+
+    init {
+        speechRecognitionHelper.updateHandler { command ->
+            handleVoiceCommand(command)
+        }
+    }
 
     fun onEvent(event: NoteBookEvent) {
         when (event) {
             is NoteBookEvent.FetchNoteBooks -> fetchNoteBooks()
             is NoteBookEvent.NavigateToNoteBook -> navigateToNoteBook(
                 event.noteBookId,
-                event.globalNavController)
-            is NoteBookEvent.DeleteNoteBook -> TODO()
-            NoteBookEvent.UpdateSelectedNoteBook -> TODO()
+                event.globalNavController
+            )
+
+            is NoteBookEvent.DeleteNoteBooks -> deleteNoteBooks(event.noteBooks)
+
+            NoteBookEvent.StartVoiceRecognition -> {
+                startVoiceRecognition()
+            }
+
+            NoteBookEvent.StopVoiceRecognition -> {
+                stopVoiceRecognition()
+            }
+
+            is NoteBookEvent.SetGlobalNavController -> setGlobalNavController(event.navHostController)
+            is NoteBookEvent.AddNoteBookByVoice -> addNotebook(event.noteBookName)
+            is NoteBookEvent.DeleteNoteBookByVoice -> deleteNotebookByName(event.noteBookName)
+            is NoteBookEvent.OpenNoteBookByVoice -> voiceNavigation(event.noteBookName)
+            NoteBookEvent.OpenNoteBookForm -> {
+                _uiState.value.globalNavController?.navigate(Routes.AddingNoteBook.route)
+            }
         }
     }
 
@@ -39,35 +71,160 @@ class NoteBookViewModel @Inject constructor(
         globalNavController: NavHostController
     ) {
         viewModelScope.launch {
-            dataStore.saveNoteBookId(noteBookId)
             globalNavController.navigate("noteBookDetails/${noteBookId}")
         }
     }
 
+    private fun setGlobalNavController(navController: NavHostController) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(globalNavController = navController)
+        }
+    }
+
+
     private fun fetchNoteBooks() {
         viewModelScope.launch {
             val noteBooks = repository.getAllNotebooksWithTotals()
-            _uiState.value = _uiState.value.copy(listOfNoteBook = noteBooks)
+            if (noteBooks.isEmpty()) {
+                _uiState.update { currentState ->
+                    currentState.copy(isListEmpty = true)
+                }
+            } else {
+                _uiState.update { currentState ->
+                    currentState.copy(isListEmpty = false)
+                }
+            }
+            _uiState.update { currentState ->
+                currentState.copy(listOfNoteBook = noteBooks)
+
+            }
         }
     }
 
-    private fun fetchTotalAmounts(noteBookId: Int) {
+    private fun deleteNoteBooks(noteBooks: List<Int>) {
         viewModelScope.launch {
-            val totalAmounts = repository.getTotalsForNoteBook(noteBookId)
+            try {
+                val noteBooksList = noteBooks.toList()
+                repository.deleteNoteBooks(noteBooksList)
+                ToastManager.showToast(
+                    "Notebooks deleted successfully",
+                    isSuccess = true
+                )
+                fetchNoteBooks()
+            } catch (e: Exception) {
+                ToastManager.showToast("Error in deleting notebooks", isSuccess = false)
+                Log.e("NoteBookViewModel", "deleteNoteBooks: ", e)
+            }
+
         }
     }
 
-    private fun updateSelectedNoteBook() {
-        viewModelScope.launch {
 
+    override fun handleVoiceCommand(command: String) {
+        when {
+            command.contains("add notebook") -> {
+                val notebookName = extractNameFromCommand(command)
+                onEvent(NoteBookEvent.AddNoteBookByVoice(notebookName.lowercase()))
+                onEvent(NoteBookEvent.StopVoiceRecognition)
+            }
+
+            command.contains("delete notebook", ignoreCase = true) -> {
+                val notebookName = extractNameFromCommand(command)
+                onEvent(NoteBookEvent.DeleteNoteBookByVoice(notebookName.lowercase()))
+                onEvent(NoteBookEvent.StopVoiceRecognition)
+            }
+
+            command.contains("open notebook", ignoreCase = true) -> {
+                val notebookName = extractNameFromCommand(command)
+                onEvent(NoteBookEvent.OpenNoteBookByVoice(notebookName.lowercase()))
+                onEvent(NoteBookEvent.StopVoiceRecognition)
+            }
+
+            command.contains("go to notebook form", ignoreCase = true) -> {
+                onEvent(NoteBookEvent.OpenNoteBookForm)
+                onEvent(NoteBookEvent.StopVoiceRecognition)
+            }
+
+            command.contains("back", ignoreCase = true) -> {
+                _uiState.value.globalNavController?.popBackStack()
+                onEvent(NoteBookEvent.StopVoiceRecognition)
+            }
+            else -> {
+//                viewModelScope.launch {
+//                    ToastManager.showToast("Command not recognized", isSuccess = false)
+//                    delay(900)
+//                    onEvent(NoteBookEvent.StopVoiceRecognition)
+//                }
+                elseCaseHandling("Command not recognized") {
+                    onEvent(NoteBookEvent.StopVoiceRecognition)
+                }
+            }
         }
     }
 
-    private fun deleteNoteBook(noteBook: NoteBookEntity) {
+
+
+
+    override fun startVoiceRecognition() {
+        super.startVoiceRecognition()
+        _uiState.update { it -> it.copy(isVoiceRecognitionStart = true) }
+    }
+
+    override fun stopVoiceRecognition() {
+        super.stopVoiceRecognition()
+        _uiState.update { it -> it.copy(isVoiceRecognitionStart = false) }
+    }
+
+    private fun extractNameFromCommand(command: String): String {
+        return command.substringAfter("notebook").trim()
+    }
+
+    private fun addNotebook(name: String) {
         viewModelScope.launch {
-            repository.deleteNotebook(noteBook)
+            try {
+                repository.insertNotebook(NoteBookEntity(name = name))
+                fetchNoteBooks()
+                ToastManager.showToast(
+                    "Notebook added successfully",
+                    isSuccess = true
+                )
+            } catch (e: Exception) {
+                ToastManager.showToast("Error in adding notebook", isSuccess = false)
+            }
         }
-        fetchNoteBooks()
+    }
+
+    private fun deleteNotebookByName(name: String) {
+        viewModelScope.launch {
+            val notebook = repository.getNotebookByName(name)
+            notebook?.let {
+                repository.deleteNotebook(it)
+                fetchNoteBooks()
+                ToastManager.showToast(
+
+                    "Notebook deleted successfully",
+                    isSuccess = true
+                )
+            } ?: run {
+                ToastManager.showToast("Notebook not found", isSuccess = false)
+            }
+        }
+    }
+
+    private fun voiceNavigation(name: String) {
+        viewModelScope.launch {
+            val noteBook = repository.getNotebookByName(name)
+            noteBook?.let {
+                _uiState.value.globalNavController?.navigate("noteBookDetails/${it.id}")
+            } ?: run {
+                ToastManager.showToast("Notebook not found", isSuccess = false)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        speechRecognitionHelper.stopListening()
     }
 
 }

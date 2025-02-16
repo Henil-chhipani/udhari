@@ -50,6 +50,8 @@ class FinanceRepository(
         }
     }
 
+
+
     suspend fun getTransactionsByEntityId(
         entityId: Int,
     ): List<PendingTransaction> {
@@ -96,6 +98,12 @@ class FinanceRepository(
         }
     }
 
+    suspend fun getEntityByName(name: String): FinanceEntity {
+        return withContext(Dispatchers.IO) {
+            entityDao.getEntityByName(name)
+        }
+    }
+
     suspend fun deleteEntity(entity: FinanceEntity) {
         withContext(Dispatchers.IO) {
             entityDao.deleteEntity(entity)
@@ -111,6 +119,17 @@ class FinanceRepository(
     suspend fun getEntityByNoteBookId(notebookId: Int): List<FinanceEntity> {
         return withContext(Dispatchers.IO) {
             entityDao.getEntitiesByNoteBookId(notebookId)
+        }
+    }
+
+    suspend fun deleteEntities(entities: List<Int>) {
+        withContext(Dispatchers.IO) {
+            try {
+                entityDao.deleteEntities(entities)
+            } catch (e: Exception) {
+                Log.e("DeleteNoteBooks", "Failed to delete notebooks: ${e.message}")
+                // Optionally, handle the exception further
+            }
         }
     }
 
@@ -147,6 +166,19 @@ class FinanceRepository(
         }
     }
 
+
+    suspend fun getNotebookByName(name: String): NoteBookEntity? {
+        return withContext(Dispatchers.IO) {
+            notebookDao.getNotebookByName(name)
+        }
+    }
+
+    suspend fun getNotebookById(id: Int): NoteBookEntity? {
+        return withContext(Dispatchers.IO) {
+            notebookDao.getNotebookById(id)
+        }
+    }
+
     suspend fun updateNotebook(notebook: NoteBookEntity) {
         withContext(Dispatchers.IO) {
             notebookDao.updateNoteBookEntity(notebook)
@@ -164,6 +196,25 @@ class FinanceRepository(
             notebookDao.deleteNotebookById(id)
         }
     }
+
+    suspend fun deleteNoteBooks(notebooks: List<Int>){
+        withContext(Dispatchers.IO) {
+            try {
+                notebookDao.deleteNoteBooks(notebooks)
+            } catch (e: Exception) {
+                Log.e("DeleteNoteBooks", "Failed to delete notebooks: ${e.message}")
+                // Optionally, handle the exception further
+            }
+        }
+    }
+
+//    suspend fun deleteNotebooksByIds(ids: List<String>) {
+//        // If using Room:
+//        noteBookDao.deleteNotebooks(ids)
+//
+//        // Or, if using a network API:
+//        apiService.deleteNotebooks(ids)
+//    }
 
     suspend fun deleteNotebook(notebook: NoteBookEntity) {
         withContext(Dispatchers.IO) {

@@ -25,7 +25,7 @@ import androidx.room.ForeignKey
             onDelete = ForeignKey.CASCADE // Delete all transactions if the entity is deleted
         ),
         ForeignKey(
-            entity = FinanceEntity::class,
+            entity = NoteBookEntity::class,
             parentColumns = ["id"],
             childColumns = ["noteBookId"],
             onDelete = ForeignKey.CASCADE

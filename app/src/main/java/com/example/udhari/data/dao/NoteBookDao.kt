@@ -22,8 +22,18 @@ interface NoteBookDao {
     @Query("SELECT * FROM note_book")
     suspend fun getAllNotebooks(): List<NoteBookEntity>
 
+    @Query("SELECT * FROM note_book WHERE name = :name")
+    suspend fun getNotebookByName(name: String): NoteBookEntity
+
+    @Query("SELECT * FROM note_book WHERE id = :id")
+    suspend fun getNotebookById(id: Int): NoteBookEntity
+
     @Delete
     suspend fun deleteNotebook(noteBookEntity: NoteBookEntity)
+
+    @Query("DELETE FROM note_book WHERE id IN (:noteBooks)")
+    suspend fun deleteNoteBooks(noteBooks: List<Int>)
+
 
     @Query("DELETE FROM note_book WHERE id = :id")
     suspend fun deleteNotebookById(id: Int)

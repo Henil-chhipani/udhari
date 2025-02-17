@@ -25,7 +25,7 @@ import androidx.room.ForeignKey
             onDelete = ForeignKey.CASCADE // Delete all transactions if the entity is deleted
         ),
         ForeignKey(
-            entity = FinanceEntity::class,
+            entity = NoteBookEntity::class,
             parentColumns = ["id"],
             childColumns = ["noteBookId"],
             onDelete = ForeignKey.CASCADE
@@ -34,8 +34,8 @@ import androidx.room.ForeignKey
 )
 data class PendingTransaction(
     @PrimaryKey(autoGenerate = true) val id: Int = 0, // Unique transaction ID
-    val entityId: Int, // ID of the associated entity
     val noteBookId: Int,
+    val entityId: Int, // ID of the associated entity
     val description: String, // Description of the transaction
     val amount: Double, // Transaction amount
     val date: String, // Transaction date

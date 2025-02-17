@@ -26,7 +26,7 @@ class PreferenceDataStore(private val dataStore: DataStore<Preferences>) {
     private val dataStoreFlow = dataStore.data
 
     val noteBookId: Flow<Int> =
-        dataStoreFlow.map { preferences -> preferences[NOTEBOOK_ID] ?: 1 }.distinctUntilChanged()
+        dataStoreFlow.map { preferences -> preferences[NOTEBOOK_ID] ?: -1 }.distinctUntilChanged()
 
     suspend fun saveNoteBookId(id: Int) = withContext(Dispatchers.IO) {
         dataStore.edit { preferences ->

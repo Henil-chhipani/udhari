@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.example.udhari.data.entity.PendingTransaction
+import com.example.udhari.data.entity.Totals
 import com.example.udhari.data.entity.TransactionType
 
 
@@ -34,5 +35,15 @@ interface PendingTransactionDao {
 
     @Query("SELECT SUM(amount) FROM pending_transactions WHERE type = :type AND entityId = :entityId")
     suspend fun getTotalAmountByType(entityId: Int, type: TransactionType): Double
+
+    @Query(
+        """
+        SELECT 
+            SUM(CASE WHEN type = 'OWE' THEN amount ELSE 0 END) AS totalOwe,
+            SUM(CASE WHEN type = 'COLLECT' THEN amount ELSE 0 END) AS totalCollect
+        FROM pending_transactions
+    """
+    )
+    suspend fun getOverallTotals(): Totals
 
 }

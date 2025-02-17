@@ -8,6 +8,7 @@ import com.example.udhari.data.dao.PendingTransactionDao
 import com.example.udhari.data.entity.FinanceEntity
 import com.example.udhari.data.entity.NoteBookEntity
 import com.example.udhari.data.entity.PendingTransaction
+import com.example.udhari.data.entity.Totals
 import com.example.udhari.data.entity.TransactionType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,6 +21,7 @@ class FinanceRepository(
     // Transactions
     suspend fun insertTransaction(transaction: PendingTransaction) {
         withContext(Dispatchers.IO) {
+            Log.d("FinanceRepository", "Inserting transaction: $transaction")
             transactionDao.insertTransaction(transaction)
         }
     }
@@ -48,6 +50,8 @@ class FinanceRepository(
         }
     }
 
+
+
     suspend fun getTransactionsByEntityId(
         entityId: Int,
     ): List<PendingTransaction> {
@@ -68,7 +72,14 @@ class FinanceRepository(
         }
     }
 
-    // Entities
+    // get overall total of data base regardless of notebook and entity
+    suspend fun getOverallTotals(): Totals {
+        return withContext(Dispatchers.IO) {
+            transactionDao.getOverallTotals()
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------
     suspend fun insertEntity(entity: FinanceEntity) {
         withContext(Dispatchers.IO) {
             entityDao.insertEntity(entity)
@@ -84,6 +95,12 @@ class FinanceRepository(
     suspend fun getAllEntities(): List<FinanceEntity> {
         return withContext(Dispatchers.IO) {
             entityDao.getAllEntities()
+        }
+    }
+
+    suspend fun getEntityByName(name: String): FinanceEntity {
+        return withContext(Dispatchers.IO) {
+            entityDao.getEntityByName(name)
         }
     }
 
@@ -105,15 +122,60 @@ class FinanceRepository(
         }
     }
 
+    suspend fun deleteEntities(entities: List<Int>) {
+        withContext(Dispatchers.IO) {
+            try {
+                entityDao.deleteEntities(entities)
+            } catch (e: Exception) {
+                Log.e("DeleteNoteBooks", "Failed to delete notebooks: ${e.message}")
+                // Optionally, handle the exception further
+            }
+        }
+    }
+
+    suspend fun getEntityByNoteBookIdAndTotals(notebookId: Int): List<FinanceEntity> =
+        withContext(Dispatchers.IO) {
+            val entities = entityDao.getEntitiesByNoteBookId(notebookId)
+            return@withContext entities.map {
+                val totals = entityDao.getTotalsForEntity(it.id)
+                it.copy(
+                    totalOwe = totals.totalOwe,
+                    totalCollect = totals.totalCollect
+                )
+            }
+        }
+
+
     suspend fun searchEntitiesByName(name: String): List<FinanceEntity> {
         return withContext(Dispatchers.IO) {
             entityDao.searchEntitiesByName(name)
         }
     }
 
+    // provide total for particular entity
+    suspend fun getTotalsForEntity(entityId: Int): Totals {
+        return withContext(Dispatchers.IO) {
+            entityDao.getTotalsForEntity(entityId)
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------
     suspend fun insertNotebook(notebook: NoteBookEntity) {
         withContext(Dispatchers.IO) {
             notebookDao.insertNoteBookEntity(notebook)
+        }
+    }
+
+
+    suspend fun getNotebookByName(name: String): NoteBookEntity? {
+        return withContext(Dispatchers.IO) {
+            notebookDao.getNotebookByName(name)
+        }
+    }
+
+    suspend fun getNotebookById(id: Int): NoteBookEntity? {
+        return withContext(Dispatchers.IO) {
+            notebookDao.getNotebookById(id)
         }
     }
 
@@ -122,7 +184,8 @@ class FinanceRepository(
             notebookDao.updateNoteBookEntity(notebook)
         }
     }
-    suspend fun updateNoteBookEntityNameById(name: String, id:Int){
+
+    suspend fun updateNoteBookEntityNameById(name: String, id: Int) {
         withContext(Dispatchers.IO) {
             notebookDao.updateNoteBookEntityNameById(name, id)
         }
@@ -134,6 +197,25 @@ class FinanceRepository(
         }
     }
 
+    suspend fun deleteNoteBooks(notebooks: List<Int>){
+        withContext(Dispatchers.IO) {
+            try {
+                notebookDao.deleteNoteBooks(notebooks)
+            } catch (e: Exception) {
+                Log.e("DeleteNoteBooks", "Failed to delete notebooks: ${e.message}")
+                // Optionally, handle the exception further
+            }
+        }
+    }
+
+//    suspend fun deleteNotebooksByIds(ids: List<String>) {
+//        // If using Room:
+//        noteBookDao.deleteNotebooks(ids)
+//
+//        // Or, if using a network API:
+//        apiService.deleteNotebooks(ids)
+//    }
+
     suspend fun deleteNotebook(notebook: NoteBookEntity) {
         withContext(Dispatchers.IO) {
             notebookDao.deleteNotebook(notebook)
@@ -143,6 +225,26 @@ class FinanceRepository(
     suspend fun getAllNotebooks(): List<NoteBookEntity> {
         return withContext(Dispatchers.IO) {
             notebookDao.getAllNotebooks()
+        }
+    }
+
+    suspend fun getAllNotebooksWithTotals(): List<NoteBookEntity> =
+        withContext(Dispatchers.IO) {
+            val notebooks = notebookDao.getAllNotebooks()
+            return@withContext notebooks.map { notebook ->
+                val totals = notebookDao.getTotalsForNoteBook(notebook.id)
+                notebook.copy(
+                    totalOwe = totals.totalOwe,
+                    totalCollect = totals.totalCollect
+                )
+            }
+        }
+
+
+    // provide total for particular noteBook
+    suspend fun getTotalsForNoteBook(noteBookId: Int): Totals {
+        return withContext(Dispatchers.IO) {
+            notebookDao.getTotalsForNoteBook(noteBookId)
         }
     }
 }

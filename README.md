@@ -7,9 +7,9 @@ Udhari is a simple and intuitive app designed to help you keep track of all your
 
 ## Screenshots
 
-| Light Mode | Dark Mode |
-|-------------------|-------------------|
-| <img src="screenshot/personalNoteBook.png" alt="Personal Notebook Screenshot" width="200"> | <img src="screenshot/DarkPersonalNoteBook.png" alt="Business Notebook Screenshot" width="200"> |
+| Light Mode                                                                       | Dark Mode                                                                        |
+|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| <img src="screenshot/newUi1.jpg" alt="Personal Notebook Screenshot" width="200"> | <img src="screenshot/newUi2.png" alt="Business Notebook Screenshot" width="200"> |
 
 For more screenshots, check out the [screenshots.md](SCREENSHOT.md) file.
 

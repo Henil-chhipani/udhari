@@ -25,18 +25,10 @@ import javax.inject.Inject
 @HiltViewModel
 class NoteBookViewModel @Inject constructor(
     private val repository: FinanceRepository,
-    private val speechRecognitionHelper: SpeechRecognitionHelper,
-
-    ) : BaseViewModel(speechRecognitionHelper) {
+    speechRecognitionHelper: SpeechRecognitionHelper ) : BaseViewModel(speechRecognitionHelper) {
 
     private val _uiState = MutableStateFlow(NoteBookUiState())
     val uiState = _uiState.asStateFlow()
-
-    init {
-        speechRecognitionHelper.updateHandler { command ->
-            handleVoiceCommand(command)
-        }
-    }
 
     fun onEvent(event: NoteBookEvent) {
         when (event) {
@@ -47,15 +39,8 @@ class NoteBookViewModel @Inject constructor(
             )
 
             is NoteBookEvent.DeleteNoteBooks -> deleteNoteBooks(event.noteBooks)
-
-            NoteBookEvent.StartVoiceRecognition -> {
-                startVoiceRecognition()
-            }
-
-            NoteBookEvent.StopVoiceRecognition -> {
-                stopVoiceRecognition()
-            }
-
+            NoteBookEvent.StartVoiceRecognition -> startVoiceRecognition()
+            NoteBookEvent.StopVoiceRecognition -> stopVoiceRecognition()
             is NoteBookEvent.SetGlobalNavController -> setGlobalNavController(event.navHostController)
             is NoteBookEvent.AddNoteBookByVoice -> addNotebook(event.noteBookName)
             is NoteBookEvent.DeleteNoteBookByVoice -> deleteNotebookByName(event.noteBookName)
@@ -119,42 +104,43 @@ class NoteBookViewModel @Inject constructor(
         }
     }
 
-
     override fun handleVoiceCommand(command: String) {
         when {
-            command.contains("add notebook") -> {
+            command.contains("add notebook", ignoreCase = true) -> {
+                Log.e("handleVoiceCommand", "adding notebook")
                 val notebookName = extractNameFromCommand(command)
                 onEvent(NoteBookEvent.AddNoteBookByVoice(notebookName.lowercase()))
                 onEvent(NoteBookEvent.StopVoiceRecognition)
             }
 
             command.contains("delete notebook", ignoreCase = true) -> {
+                Log.e("handleVoiceCommand", "delete notebook")
                 val notebookName = extractNameFromCommand(command)
                 onEvent(NoteBookEvent.DeleteNoteBookByVoice(notebookName.lowercase()))
                 onEvent(NoteBookEvent.StopVoiceRecognition)
             }
 
             command.contains("open notebook", ignoreCase = true) -> {
+                Log.e("handleVoiceCommand", "open notebook")
                 val notebookName = extractNameFromCommand(command)
                 onEvent(NoteBookEvent.OpenNoteBookByVoice(notebookName.lowercase()))
                 onEvent(NoteBookEvent.StopVoiceRecognition)
             }
 
             command.contains("go to notebook form", ignoreCase = true) -> {
+                Log.e("handleVoiceCommand", "notebook form")
                 onEvent(NoteBookEvent.OpenNoteBookForm)
                 onEvent(NoteBookEvent.StopVoiceRecognition)
             }
 
             command.contains("back", ignoreCase = true) -> {
+                Log.e("handleVoiceCommand", "back")
                 _uiState.value.globalNavController?.popBackStack()
                 onEvent(NoteBookEvent.StopVoiceRecognition)
             }
+
             else -> {
-//                viewModelScope.launch {
-//                    ToastManager.showToast("Command not recognized", isSuccess = false)
-//                    delay(900)
-//                    onEvent(NoteBookEvent.StopVoiceRecognition)
-//                }
+                Log.e("handleVoiceCommand", "else")
                 elseCaseHandling("Command not recognized") {
                     onEvent(NoteBookEvent.StopVoiceRecognition)
                 }
@@ -163,16 +149,14 @@ class NoteBookViewModel @Inject constructor(
     }
 
 
-
-
     override fun startVoiceRecognition() {
         super.startVoiceRecognition()
-        _uiState.update { it -> it.copy(isVoiceRecognitionStart = true) }
+        _uiState.value = _uiState.value.copy(isVoiceRecognitionStart = true)
     }
 
     override fun stopVoiceRecognition() {
         super.stopVoiceRecognition()
-        _uiState.update { it -> it.copy(isVoiceRecognitionStart = false) }
+        _uiState.value = _uiState.value.copy(isVoiceRecognitionStart = false)
     }
 
     private fun extractNameFromCommand(command: String): String {
@@ -201,7 +185,6 @@ class NoteBookViewModel @Inject constructor(
                 repository.deleteNotebook(it)
                 fetchNoteBooks()
                 ToastManager.showToast(
-
                     "Notebook deleted successfully",
                     isSuccess = true
                 )
@@ -222,10 +205,33 @@ class NoteBookViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        speechRecognitionHelper.stopListening()
-    }
+}
 
+data class NoteBookUiState(
+    val totalAmount: Int = 0,
+    val totalDebt: Int = 0,
+    val totalCredit: Int = 0,
+    val selectedNoteBookId: Int = -1,
+    val noteBookNameString: String = "",
+    val listOfNoteBook: List<NoteBookEntity> = emptyList(),
+    val isListEmpty: Boolean = false,
+    val isVoiceRecognitionStart: Boolean = false,
+    val globalNavController: NavHostController? = null,
+)
+
+
+sealed class NoteBookEvent {
+    data object FetchNoteBooks : NoteBookEvent()
+    data class SetGlobalNavController(val navHostController: NavHostController) : NoteBookEvent()
+    data class NavigateToNoteBook(val globalNavController: NavHostController, val noteBookId: Int) :
+        NoteBookEvent()
+
+    data class DeleteNoteBooks(val noteBooks: List<Int>) : NoteBookEvent()
+    data object StartVoiceRecognition : NoteBookEvent()
+    data object StopVoiceRecognition : NoteBookEvent()
+    data class AddNoteBookByVoice(val noteBookName: String) : NoteBookEvent()
+    data class DeleteNoteBookByVoice(val noteBookName: String) : NoteBookEvent()
+    data class OpenNoteBookByVoice(val noteBookName: String) : NoteBookEvent()
+    data object OpenNoteBookForm : NoteBookEvent()
 }
 

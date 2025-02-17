@@ -19,188 +19,190 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
-@HiltViewModel
-class NoteBookFormViewModel @Inject constructor(
-    private val repository: FinanceRepository,
-    speechRecognitionHelper: SpeechRecognitionHelper,
-) : BaseViewModel(speechRecognitionHelper) {
+    @HiltViewModel
+    class NoteBookFormViewModel @Inject constructor(
+        private val repository: FinanceRepository,
+        speechRecognitionHelper: SpeechRecognitionHelper,
+    ) : BaseViewModel(speechRecognitionHelper) {
 
-    private val _uiState = MutableStateFlow(AddingNoteBookUiState())
-    val uiState = _uiState.asStateFlow()
+        private val _uiState = MutableStateFlow(AddingNoteBookUiState())
+        val uiState = _uiState.asStateFlow()
 
 
-    fun onEvent(event: AddingNoteBookUiEvent) {
-        when (event) {
-            is AddingNoteBookUiEvent.InsertNoteBook -> insertNoteBook()
-            is AddingNoteBookUiEvent.UpdateNoteBookNameString -> {
-                updateNoteBookNameString(event.noteBookNameString)
-            }
-
-            is AddingNoteBookUiEvent.UpdateNoteBook -> updateNotebook()
-            is AddingNoteBookUiEvent.IsNoteBookUpdate -> isNoteBookUpdate(
-                event.isUpdate,
-                event.noteBookId
-            )
-
-            is AddingNoteBookUiEvent.SetGlobalNavController -> setGlobalNavController(event.navHostController)
-            AddingNoteBookUiEvent.StartVoiceRecognition -> startVoiceRecognition()
-            AddingNoteBookUiEvent.StopVoiceRecognition -> stopVoiceRecognition()
-        }
-    }
-
-    private fun setGlobalNavController(navHostController: NavHostController) {
-        _uiState.value = _uiState.value.copy(globalNavController = navHostController)
-    }
-
-    private fun insertNoteBook() {
-        if (_uiState.value.noteBookNameString.isEmpty()) {
-            _uiState.update { it->
-                it.copy(isNoteBookError = true, noteBookErrorMessage = "NoteBook Name can't be empty")
-            }
-        } else {
-            viewModelScope.launch {
-                try {
-                    repository.insertNotebook(NoteBookEntity(name = _uiState.value.noteBookNameString.lowercase()))
-                    ToastManager.showToast("Notebook added successfully", isSuccess = true)
-                    _uiState.update { it.copy(noteBookNameString = "") }
-                } catch (e: Exception) {
-                    ToastManager.showToast("Failed to add notebook", isSuccess = false)
+        fun onEvent(event: AddingNoteBookUiEvent) {
+            when (event) {
+                is AddingNoteBookUiEvent.InsertNoteBook -> insertNoteBook()
+                is AddingNoteBookUiEvent.UpdateNoteBookNameString -> {
+                    updateNoteBookNameString(event.noteBookNameString)
                 }
-            }
-        }
-    }
 
-    private fun updateNoteBookNameString(noteBookNameString: String) {
-        // Trim leading and trailing spaces
-        val trimmedName = noteBookNameString.trim()
-
-        // Check if the notebook name is empty
-        if (trimmedName.isEmpty()) {
-            _uiState.value = _uiState.value.copy(
-                noteBookNameString = "",
-                isNoteBookError = true,
-                noteBookErrorMessage = "Notebook name cannot be empty"
-            )
-            return
-        }
-
-        // Validate length (Example: Ensure it's at least 3 characters)
-        if (trimmedName.length < 3) {
-            _uiState.value = _uiState.value.copy(
-                noteBookNameString = noteBookNameString,
-                isNoteBookError = true,
-                noteBookErrorMessage = "Notebook name must be at least 3 characters long"
-            )
-            return
-        }
-
-        // Ensure name is not too long (Example: Limit to 50 characters)
-        if (trimmedName.length > 50) {
-            _uiState.value = _uiState.value.copy(
-                noteBookNameString = noteBookNameString,
-                isNoteBookError = true,
-                noteBookErrorMessage = "Notebook name cannot exceed 50 characters"
-            )
-            return
-        }
-
-        // Validate against special characters (Allow only letters, numbers, and spaces)
-        val isValidName = trimmedName.matches(Regex("^[a-zA-Z0-9 ]+$"))
-        if (!isValidName) {
-            _uiState.value = _uiState.value.copy(
-                noteBookNameString = noteBookNameString,
-                isNoteBookError = true,
-                noteBookErrorMessage = "Notebook name can only contain letters, numbers, and spaces"
-            )
-            return
-        }
-
-        // Update state with valid name
-        _uiState.value = _uiState.value.copy(
-            noteBookNameString = noteBookNameString.lowercase(),
-            isNoteBookError = false,
-            noteBookErrorMessage = ""
-        )
-    }
-
-
-    override fun handleVoiceCommand(command: String) {
-        when {
-            command.contains("name") -> {
-                val name = extractNameFromCommand(command)
-                onEvent(AddingNoteBookUiEvent.UpdateNoteBookNameString(name))
-                onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
-            }
-
-            command.contains("insert") -> {
-                onEvent(AddingNoteBookUiEvent.InsertNoteBook)
-                onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
-            }
-
-            command.contains("back", ignoreCase = true) -> {
-                _uiState.value.globalNavController?.popBackStack()
-                onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
-            }
-
-            else -> {
-                elseCaseHandling("Command not recognized") {
-                    onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
-                }
-            }
-        }
-    }
-
-    private fun extractNameFromCommand(command: String): String {
-        val nameRegex = Regex("name\\s+(.+)", RegexOption.IGNORE_CASE)
-        val matchResult = nameRegex.find(command)
-        return matchResult?.groupValues?.get(1) ?: ""
-    }
-
-    override fun stopVoiceRecognition() {
-        super.stopVoiceRecognition()
-        _uiState.value = _uiState.value.copy(isVoiceRecognitionStart = false)
-    }
-
-    override fun startVoiceRecognition() {
-        super.startVoiceRecognition()
-        _uiState.value = _uiState.value.copy(isVoiceRecognitionStart = true)
-    }
-
-    private fun updateNotebook() {
-        viewModelScope.launch {
-            try {
-                repository.updateNotebook(
-                    NoteBookEntity(
-                        id = _uiState.value.noteBook!!.id,
-                        name = _uiState.value.noteBookNameString
-                    )
+                is AddingNoteBookUiEvent.UpdateNoteBook -> updateNotebook()
+                is AddingNoteBookUiEvent.IsNoteBookUpdate -> isNoteBookUpdate(
+                    event.isUpdate,
+                    event.noteBookId
                 )
-                ToastManager.showToast("Notebook updated successfully", isSuccess = true)
-                _uiState.value.globalNavController!!.popBackStack()
-            } catch (e: Exception) {
-                ToastManager.showToast("Failed to update notebook", isSuccess = false)
+
+                is AddingNoteBookUiEvent.SetGlobalNavController -> setGlobalNavController(event.navHostController)
+                AddingNoteBookUiEvent.StartVoiceRecognition -> startVoiceRecognition()
+                AddingNoteBookUiEvent.StopVoiceRecognition -> stopVoiceRecognition()
             }
-
         }
-    }
 
-    private fun isNoteBookUpdate(isNoteBookUpdate: Boolean, noteBookId: Int) {
-        viewModelScope.launch {
-            var notebook = repository.getNotebookById(noteBookId)
-            if (notebook != null) {
-                _uiState.update { it ->
-                    it.copy(
-                        isUpdate = isNoteBookUpdate,
-                        noteBook = notebook,
-                        noteBookNameString = notebook.name
-                    )
+        private fun setGlobalNavController(navHostController: NavHostController) {
+            _uiState.value = _uiState.value.copy(globalNavController = navHostController)
+        }
+
+        private fun insertNoteBook() {
+            if (_uiState.value.noteBookNameString.isEmpty()) {
+                _uiState.update { it->
+                    it.copy(isNoteBookError = true, noteBookErrorMessage = "NoteBook Name can't be empty")
                 }
             } else {
-                _uiState.value.globalNavController!!.popBackStack()
+                viewModelScope.launch {
+                    try {
+                        repository.insertNotebook(NoteBookEntity(name = _uiState.value.noteBookNameString.lowercase()))
+                        ToastManager.showToast("Notebook added successfully", isSuccess = true)
+                        _uiState.update { it.copy(noteBookNameString = "") }
+                    } catch (e: Exception) {
+                        ToastManager.showToast("Failed to add notebook", isSuccess = false)
+                    }
+                }
+            }
+        }
+
+        private fun updateNoteBookNameString(noteBookNameString: String) {
+            // Trim leading and trailing spaces
+            val trimmedName = noteBookNameString.trim()
+
+            // Check if the notebook name is empty
+            if (trimmedName.isEmpty()) {
+                _uiState.value = _uiState.value.copy(
+                    noteBookNameString = "",
+                    isNoteBookError = true,
+                    noteBookErrorMessage = "Notebook name cannot be empty"
+                )
+                return
+            }
+
+            // Validate length (Example: Ensure it's at least 3 characters)
+            if (trimmedName.length < 3) {
+                _uiState.value = _uiState.value.copy(
+                    noteBookNameString = noteBookNameString,
+                    isNoteBookError = true,
+                    noteBookErrorMessage = "Notebook name must be at least 3 characters long"
+                )
+                return
+            }
+
+            // Ensure name is not too long (Example: Limit to 50 characters)
+            if (trimmedName.length > 50) {
+                _uiState.value = _uiState.value.copy(
+                    noteBookNameString = noteBookNameString,
+                    isNoteBookError = true,
+                    noteBookErrorMessage = "Notebook name cannot exceed 50 characters"
+                )
+                return
+            }
+
+            // Validate against special characters (Allow only letters, numbers, and spaces)
+            val isValidName = trimmedName.matches(Regex("^[a-zA-Z0-9 ]+$"))
+            if (!isValidName) {
+                _uiState.value = _uiState.value.copy(
+                    noteBookNameString = noteBookNameString,
+                    isNoteBookError = true,
+                    noteBookErrorMessage = "Notebook name can only contain letters, numbers, and spaces"
+                )
+                return
+            }
+
+            // Update state with valid name
+            _uiState.value = _uiState.value.copy(
+                noteBookNameString = noteBookNameString.lowercase(),
+                isNoteBookError = false,
+                noteBookErrorMessage = ""
+            )
+        }
+
+
+        override fun handleVoiceCommand(command: String) {
+
+            when {
+                command.contains("name") -> {
+                    val name = extractNameFromCommand(command)
+                    onEvent(AddingNoteBookUiEvent.UpdateNoteBookNameString(name))
+                    onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
+                }
+
+                command.contains("insert") -> {
+                    onEvent(AddingNoteBookUiEvent.InsertNoteBook)
+                    onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
+                }
+
+                command.contains("back", ignoreCase = true) -> {
+                    _uiState.value.globalNavController?.popBackStack()
+                    onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
+                }
+
+                else -> {
+                    elseCaseHandling("Command not recognized") {
+                        onEvent(AddingNoteBookUiEvent.StopVoiceRecognition)
+                    }
+                }
+            }
+        }
+
+        private fun extractNameFromCommand(command: String): String {
+            val nameRegex = Regex("name\\s+(.+)", RegexOption.IGNORE_CASE)
+            val matchResult = nameRegex.find(command)
+            return matchResult?.groupValues?.get(1) ?: ""
+        }
+
+        override fun startVoiceRecognition() {
+            super.startVoiceRecognition()
+            _uiState.value = _uiState.value.copy(isVoiceRecognitionStart = true)
+        }
+
+        override fun stopVoiceRecognition() {
+            super.stopVoiceRecognition()
+            _uiState.value = _uiState.value.copy(isVoiceRecognitionStart = false)
+        }
+
+
+        private fun updateNotebook() {
+            viewModelScope.launch {
+                try {
+                    repository.updateNotebook(
+                        NoteBookEntity(
+                            id = _uiState.value.noteBook!!.id,
+                            name = _uiState.value.noteBookNameString
+                        )
+                    )
+                    ToastManager.showToast("Notebook updated successfully", isSuccess = true)
+                    _uiState.value.globalNavController!!.popBackStack()
+                } catch (e: Exception) {
+                    ToastManager.showToast("Failed to update notebook", isSuccess = false)
+                }
+
+            }
+        }
+
+        private fun isNoteBookUpdate(isNoteBookUpdate: Boolean, noteBookId: Int) {
+            viewModelScope.launch {
+                var notebook = repository.getNotebookById(noteBookId)
+                if (notebook != null) {
+                    _uiState.update { it ->
+                        it.copy(
+                            isUpdate = isNoteBookUpdate,
+                            noteBook = notebook,
+                            noteBookNameString = notebook.name
+                        )
+                    }
+                } else {
+                    _uiState.value.globalNavController!!.popBackStack()
+                }
             }
         }
     }
-}
 
 
 data class AddingNoteBookUiState(

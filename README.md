@@ -2,6 +2,10 @@
 
 Udhari is a simple and intuitive app designed to help you keep track of all your udhari (loan) records. Whether you’ve lent money to someone or borrowed it, Udhari ensures you never lose track of your transactions.
 
+
+# APK
+Download apk : [udhari.pages.dev](https://udhari.pages.dev/)
+
 ## Viedo
 [Youtube link](https://youtu.be/5X0QFZvolsg?si=S2NYCSRB9_IZmA9T)
 

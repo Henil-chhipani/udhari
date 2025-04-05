@@ -6,7 +6,7 @@ Udhari is a simple and intuitive app designed to help you keep track of all your
 ## APK
 Download apk : [udhari.pages.dev](https://udhari.pages.dev/)
 
-## Viedo
+## Video
 [Youtube link](https://youtu.be/5X0QFZvolsg?si=S2NYCSRB9_IZmA9T)
 
 ## Screenshots
